@@ -1,0 +1,164 @@
+# Copyright 2026 Polymerix
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dont-break"
+dynamic = ["version"]
+description = "The trust layer for AI-written code: say what must never break, prove the protection holds, enforce it on every agent edit."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Polymerix", email = "hello@dont-break.com" }]
+keywords = [
+  "ai-agents",
+  "code-graph",
+  "static-analysis",
+  "dependency-graph",
+  "cursor",
+  "claude",
+  "mcp",
+  "refactoring",
+  "code-review",
+  "impact-analysis",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.32.0",
+  "httpx>=0.27.0",
+  "websockets>=14.0",
+  "pydantic-settings>=2.6.0",
+  "rich>=13.9.0",
+  "watchfiles>=0.24",
+  "zstandard>=0.23",
+]
+
+[project.urls]
+Homepage = "https://dont-break.com"
+Documentation = "https://dont-break.com/docs"
+Source = "https://github.com/polymerix-labs/dont-break"
+Issues = "https://github.com/polymerix-labs/dont-break/issues"
+
+[project.scripts]
+dont-break = "dont_break.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "httpx>=0.27", "ruff>=0.8"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# Pre-0.16 default. Ruff 0.16 expanded to 413 rules; widening is a deliberate edit.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.hatch.version]
+path = "dont_break/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dont_break"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"frontend/dist" = "dont_break/static"
+
+# Hatchling's sdist default is "the whole project directory minus VCS-ignored
+# files", which is the opposite of what this repo needs: it swept in scripts/
+# (the lab box IP in plain text), docs/DEVELOPMENT.md (backend topology), the
+# internal CI, and a stray 2001-file virtualenv — all of it published to a
+# public index before anything checked. The wheel was never affected (it is
+# scoped to `packages` above), and PUBLIC_ALLOWLIST.txt only governs the
+# GitHub mirror, so the sdist was the one artifact with no gate at all.
+#
+# Allowlist, not denylist: a new internal directory added later is excluded by
+# default rather than shipped by omission.
+[tool.hatch.build.targets.sdist]
+# Also belt-and-suspenders with PUBLIC_ALLOWLIST.txt now that build-wheel (see
+# .gitlab-ci.yml) builds from its filtered output rather than $CI_PROJECT_DIR
+# directly — tests/ is deliberately absent from both lists, not just this one.
+only-include = [
+  "dont_break",
+  "docs/agents",
+  "docs/assets",
+  "frontend/public",
+  "frontend/src",
+  "frontend/shared",
+  "frontend/scripts",
+  "frontend/index.html",
+  "frontend/package.json",
+  "frontend/package-lock.json",
+  "frontend/tsconfig.json",
+  "frontend/vite.config.ts",
+  "frontend/tailwind.config.js",
+  "frontend/postcss.config.js",
+  "frontend/eslint.config.mjs",
+  "README.md",
+  "README.fr.md",
+  "README.ar-SA.md",
+  "README.cs-CZ.md",
+  "README.da-DK.md",
+  "README.de-DE.md",
+  "README.el-GR.md",
+  "README.es-ES.md",
+  "README.fa-IR.md",
+  "README.fi-FI.md",
+  "README.fil-PH.md",
+  "README.he-IL.md",
+  "README.hi-IN.md",
+  "README.hu-HU.md",
+  "README.id-ID.md",
+  "README.it-IT.md",
+  "README.ja-JP.md",
+  "README.ko-KR.md",
+  "README.nl-NL.md",
+  "README.no-NO.md",
+  "README.pl-PL.md",
+  "README.pt-BR.md",
+  "README.ro-RO.md",
+  "README.ru-RU.md",
+  "README.sv-SE.md",
+  "README.th-TH.md",
+  "README.tr-TR.md",
+  "README.uk-UA.md",
+  "README.uz-UZ.md",
+  "README.vi-VN.md",
+  "README.zh-CN.md",
+  "README.zh-TW.md",
+  "LICENSE",
+  "NOTICE",
+  "pyproject.toml",
+  ".env.example",
+]

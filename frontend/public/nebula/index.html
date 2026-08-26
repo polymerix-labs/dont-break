@@ -1,0 +1,405 @@
+<!--
+  Copyright 2026 Polymerix
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>dont-break · viewer</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    :root {
+      /* Charter tokens (kept in sync with src/design/tokens.css). */
+      --bg: #0d0d0f;
+      --surface: rgba(27, 27, 29, 0.92);
+      --border: rgba(120, 120, 135, 0.18);
+      --text: #ececee;
+      --muted: #a0a0a7;
+      --faint: #6f6f77;
+      --accent: #6f82e4;
+      --accent-subtle: rgba(111, 130, 228, 0.11);
+      --ok: #57b189;
+      --ok-subtle: rgba(87, 177, 137, 0.1);
+      --warn: #d0a05f;
+      --warn-subtle: rgba(208, 160, 95, 0.1);
+      --danger: #dc6b6b;
+      --zone: #cd8a55;
+      --accent2: var(--ok);
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { background: var(--bg); color: var(--text); overflow: hidden; }
+
+    /* Toolbar lives in the dont-break shell; keep control targets off-screen for the bridge. */
+    #host-tools {
+      position: fixed;
+      left: -10000px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* The scene fills the viewport; UI floats on top as glass panels. */
+    #canvas-wrap { position: fixed; inset: 0; z-index: 0; }
+    #canvas-wrap canvas { display: block; }
+
+    .hud {
+      position: fixed; z-index: 10; backdrop-filter: blur(10px);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    #topbar {
+      top: 14px; left: 14px; right: 14px;
+      display: flex; align-items: center; gap: 0.75rem 1rem; flex-wrap: wrap;
+      padding: 0.6rem 0.9rem;
+    }
+    #topbar .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 0.95rem; }
+    #topbar .brand span { color: var(--accent2); }
+    #topbar .field { display: flex; flex-direction: column; gap: 0.15rem; }
+    #topbar label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+    #topbar input[type="number"], #topbar input[type="file"], #search {
+      background: rgba(0,0,0,0.35); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 0.35rem 0.5rem; font-size: 0.8rem;
+    }
+    #topbar input[type="number"] { width: 6.5rem; }
+    #search { width: min(22rem, 40vw); }
+    button.primary {
+      border: none; border-radius: 10px; cursor: pointer; font-weight: 650; font-size: 0.82rem;
+      padding: 0.5rem 0.9rem; color: #fff;
+      background: var(--accent);
+      box-shadow: 0 4px 18px rgba(111, 130, 228, 0.35);
+    }
+    button.primary:active { transform: translateY(1px); }
+    .spacer { flex: 1 1 auto; }
+
+    .search-wrap { position: relative; }
+    #search-results {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; margin: 0; padding: 0.25rem;
+      list-style: none; max-height: 50vh; overflow: auto; display: none;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      backdrop-filter: blur(10px);
+    }
+    #search-results.open { display: block; }
+    #search-results li { padding: 0.4rem 0.55rem; border-radius: 7px; cursor: pointer; font-size: 0.82rem; }
+    #search-results li:hover { background: var(--accent-subtle); }
+
+    /* Cosmograph-style left dock: a tall sidebar pinned to the left edge. */
+    #panel {
+      top: 14px; left: 14px; bottom: 14px; width: min(380px, 88vw);
+      display: none; flex-direction: column; overflow: hidden;
+    }
+    #panel.open { display: flex; }
+    #panel .panel-top {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--border);
+    }
+    #panel-title { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
+    #panel-close {
+      border: none; background: rgba(255,255,255,0.08); color: var(--text); border-radius: 8px;
+      width: 1.7rem; height: 1.7rem; cursor: pointer; font-size: 1.1rem; line-height: 1;
+    }
+    #panel-body { overflow: auto; padding: 0.85rem 0.95rem 1.1rem; }
+    .section { margin-bottom: 1.1rem; }
+    .section:last-child { margin-bottom: 0; }
+    .section h2 {
+      font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+      margin: 0 0 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border);
+    }
+    .dl { margin: 0; display: grid; gap: 0.3rem 0.7rem; }
+    .kv { display: grid; grid-template-columns: 7rem 1fr; gap: 0.3rem 0.7rem; align-items: baseline; font-size: 0.82rem; }
+    .kv dt { color: var(--muted); font-size: 0.76rem; margin: 0; }
+    .kv dd { margin: 0; word-break: break-word; }
+    .list { margin: 0.2rem 0 0; padding: 0 0 0 1rem; font-size: 0.82rem; }
+    .list li { margin: 0.22rem 0; cursor: pointer; }
+    .list li[data-jump]:hover { color: var(--accent2); }
+    .muted { color: var(--muted); font-size: 0.78rem; }
+    .panel-type-row { display: flex; flex-wrap: wrap; gap: 0.4rem 0.7rem; align-items: baseline; }
+    .panel-type-badge {
+      font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.12rem 0.4rem; border-radius: 6px;
+      background: var(--accent-subtle); color: var(--accent);
+      border: 1px solid rgba(111, 130, 228, 0.3);
+    }
+    .panel-path { font-family: ui-monospace, monospace; font-size: 0.72rem; word-break: break-all; }
+
+    /* Impact: two numbers a person can feel, then the one action. */
+    .impact-stats { display: flex; gap: 1.4rem; margin: 0 0 0.65rem; }
+    .impact-stat { display: flex; flex-direction: column; gap: 0.1rem; }
+    .impact-num { font-size: 1.35rem; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .impact-cap { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .panel-impact-btn {
+      display: inline-block; margin: 0 0 0.35rem; padding: 0.4rem 0.8rem;
+      border-radius: 7px; border: none;
+      background: var(--accent); color: #101012;
+      font-size: 0.76rem; font-weight: 600; cursor: pointer;
+      transition: filter 120ms ease;
+    }
+    .panel-impact-btn:hover { filter: brightness(1.12); }
+    .panel-subh {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); margin: 0.65rem 0 0.25rem;
+    }
+    .panel-details { margin-bottom: 1.1rem; }
+    .panel-details > summary {
+      cursor: pointer; font-size: 0.64rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.45rem;
+    }
+    .panel-details > summary:hover { color: var(--text); }
+    .panel-fold { margin: 0.35rem 0 0; }
+    .panel-fold > summary {
+      cursor: pointer; list-style: none; display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.76rem; color: var(--muted); padding: 0.3rem 0; user-select: none;
+    }
+    .panel-fold > summary:hover { color: var(--text); }
+    .panel-fold > summary::before { content: "▸"; font-size: 0.6rem; color: var(--faint); transition: transform 120ms ease; }
+    .panel-fold[open] > summary::before { transform: rotate(90deg); }
+    .panel-fold .fold-count { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* Protection: the product statement, card-sized. */
+    .protection-card {
+      border-radius: 9px; padding: 0.6rem 0.75rem; font-size: 0.78rem;
+      border: 1px solid var(--border);
+    }
+    .protection-card.ok { background: var(--ok-subtle); border-color: rgba(87, 177, 137, 0.35); }
+    .protection-card.warn { background: var(--warn-subtle); border-color: rgba(208, 160, 95, 0.35); }
+    .protection-line { display: flex; align-items: center; gap: 0.45rem; margin: 0; }
+    .protection-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+    .protection-card.ok .protection-dot { background: var(--ok); }
+    .protection-card.warn .protection-dot { background: var(--warn); }
+    .protection-card.ok .protection-line { color: var(--ok); }
+    .protection-card.warn .protection-line { color: var(--warn); }
+    .protection-sub { margin: 0.3rem 0 0 1.05rem; color: var(--muted); font-size: 0.72rem; }
+    .protection-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.45rem 0 0 1.05rem; }
+    .protection-chip {
+      font-size: 0.68rem; padding: 0.15rem 0.45rem; border-radius: 6px;
+      background: var(--ok-subtle); color: var(--ok);
+      border: 1px solid rgba(87, 177, 137, 0.35);
+    }
+    .cfg-legend {
+      display: flex; flex-wrap: wrap; gap: 0.45rem 0.75rem;
+      margin-top: 0.45rem; font-size: 0.65rem; color: var(--muted);
+    }
+    .cfg-legend-item { display: inline-flex; align-items: center; gap: 0.3rem; }
+    .cfg-legend-swatch {
+      width: 0.55rem; height: 0.55rem; border-radius: 2px; display: inline-block;
+    }
+    .cfg-host .cfg-call:hover rect { stroke: var(--accent2); stroke-width: 1.5; }
+
+    #hover-label {
+      position: fixed; z-index: 25; pointer-events: none; display: none;
+      padding: 0.3rem 0.55rem; font-size: 0.72rem; color: var(--text);
+      max-width: 18rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transform: translate(12px, 14px);
+    }
+    #hover-label.visible { display: block; }
+    #hover-label .hover-type {
+      display: block; font-size: 0.6rem; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-top: 0.1rem;
+    }
+
+    #status {
+      position: fixed; bottom: 14px; right: 14px; z-index: 20; padding: 0.45rem 0.8rem; font-size: 0.78rem; color: var(--muted);
+      max-width: calc(100vw - 28px);
+    }
+    #status.warn { color: var(--warn); }
+    #status.err { color: var(--danger); }
+    #status.sync-progress { min-width: 220px; color: var(--text); }
+    .sync-label-row { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; }
+    .sync-label { font-size: 0.72rem; color: var(--text); }
+    .sync-pct { font-size: 0.68rem; font-family: ui-monospace, monospace; color: var(--muted); }
+    .sync-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    .sync-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; border-radius: 2px; }
+    .sync-fill.indeterminate { width: 40%; animation: sync-pulse 1.2s ease-in-out infinite; }
+    @keyframes sync-pulse {
+      0% { transform: translateX(-10%); opacity: 0.7; }
+      50% { transform: translateX(180%); opacity: 1; }
+      100% { transform: translateX(-10%); opacity: 0.7; }
+    }
+
+    /* Resolved-edge UI: status badges + the floating "X before Y" panel. */
+    .hb-badge {
+      font-size: 0.6rem; padding: 0.05rem 0.35rem; border-radius: 6px; margin-right: 0.35rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .hb-resolved { background: rgba(40, 224, 200, 0.18); color: var(--accent2); }
+    .hb-ambiguous { background: var(--warn-subtle); color: var(--warn); }
+    .hb-external { background: rgba(124, 92, 255, 0.22); color: #b9a6ff; }
+
+    #hb-toggle {
+      border: 1px solid var(--border); background: rgba(0,0,0,0.35); color: var(--text);
+      border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.78rem; cursor: pointer;
+    }
+    #hb-toggle.hidden { display: none; }
+    #hb-panel {
+      top: 14px; right: 14px; width: min(330px, 88vw); z-index: 15; display: none;
+      padding: 0.85rem 0.95rem;
+    }
+    #hb-panel.open { display: block; }
+    #hb-panel h2 {
+      font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+      margin: 0 0 0.6rem;
+    }
+    #hb-panel .hb-field { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.55rem; }
+    #hb-panel label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    #hb-panel input {
+      background: rgba(0,0,0,0.35); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 0.35rem 0.5rem; font-size: 0.78rem; width: 100%;
+    }
+    #hb-result { margin-top: 0.6rem; font-size: 0.82rem; min-height: 1.2rem; }
+    #hb-result .ok { color: var(--accent2); font-weight: 650; }
+    #hb-result .no { color: var(--warn); font-weight: 650; }
+
+    /* Architectural overlay UI: global HUD badges, toggles, per-node bars, actions panel. */
+    #arch-hud { display: flex; gap: 0.4rem; align-items: center; }
+    #arch-hud.hidden { display: none; }
+    .arch-badge {
+      font-size: 0.72rem; font-weight: 650; padding: 0.28rem 0.5rem; border-radius: 8px;
+      border: 1px solid var(--border); background: rgba(0,0,0,0.35); color: var(--text);
+      letter-spacing: 0.02em; white-space: nowrap;
+    }
+    .arch-badge.good { color: var(--accent2); border-color: rgba(40, 224, 200, 0.4); }
+    .arch-badge.mid { color: var(--warn); border-color: rgba(208, 160, 95, 0.4); }
+    .arch-badge.bad { color: var(--danger); border-color: rgba(220, 107, 107, 0.45); }
+
+    #arch-heat, #arch-actions-toggle, #nebula-edges, #nebula-replay {
+      border: 1px solid var(--border); background: rgba(0,0,0,0.35); color: var(--text);
+      border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.78rem; cursor: pointer;
+    }
+    #arch-heat.hidden, #arch-actions-toggle.hidden, #nebula-edges.hidden, #nebula-replay.hidden { display: none; }
+    #arch-heat.active, #nebula-edges.active { background: var(--accent); border-color: transparent; color: #101012; }
+
+    /* Edge-kind legend: a small glass card in the bottom-left, shown with the edges. */
+    #edge-legend {
+      position: fixed; left: 12px; bottom: 12px; z-index: 5;
+      padding: 0.5rem 0.6rem; border-radius: 10px; display: grid; gap: 0.25rem;
+      font-size: 0.72rem; line-height: 1; pointer-events: none;
+    }
+    #edge-legend.hidden { display: none; }
+    #edge-legend .leg-title { font-weight: 650; opacity: 0.8; margin-bottom: 0.15rem; }
+    #edge-legend .leg-row { display: flex; align-items: center; gap: 0.4rem; }
+    #edge-legend .leg-swatch { width: 16px; height: 3px; border-radius: 2px; }
+
+    /* Per-node score bars (inside the detail panel). */
+    .arch-row { display: grid; grid-template-columns: 6.5rem 1fr 2rem; gap: 0.5rem; align-items: center; margin: 0.3rem 0; font-size: 0.78rem; }
+    .arch-row-label { color: var(--muted); }
+    .arch-row-val { text-align: right; font-variant-numeric: tabular-nums; }
+    .arch-bar { height: 0.5rem; background: rgba(255,255,255,0.08); border-radius: 5px; overflow: hidden; }
+    .arch-bar-fill { display: block; height: 100%; border-radius: 5px; background: var(--muted); }
+    .arch-bar-fill.good { background: var(--accent2); }
+    .arch-bar-fill.mid { background: var(--warn); }
+    .arch-bar-fill.bad { background: var(--danger); }
+    .arch-rules { margin-top: 0.6rem; }
+    .arch-rules-h { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.2rem; }
+
+    #arch-panel {
+      top: 14px; right: 14px; width: min(360px, 88vw); z-index: 15; display: none;
+      padding: 0.85rem 0.95rem; max-height: calc(100vh - 90px); overflow: auto;
+    }
+    #arch-panel.open { display: block; }
+    #arch-panel h2 {
+      font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+      margin: 0 0 0.6rem;
+    }
+    .arch-actions-list li { margin: 0 0 0.7rem; cursor: default; }
+    .arch-action-top { display: flex; align-items: center; gap: 0.4rem; }
+    .arch-kind {
+      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.05rem 0.35rem; border-radius: 6px; background: rgba(124, 92, 255, 0.22); color: #b9a6ff;
+    }
+    .arch-rationale { font-size: 0.76rem; margin-top: 0.15rem; }
+  </style>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+
+  <div id="host-tools" aria-hidden="true">
+    <input type="text" id="search" placeholder="symbol name…" autocomplete="off" />
+    <ul id="search-results"></ul>
+    <button type="button" id="hb-toggle" class="hidden" title="Ask whether one call runs before another">X → Y</button>
+    <div id="arch-hud" class="hidden">
+      <span class="arch-badge" id="arch-stability" title="Architectural stability (0–100)">S –</span>
+      <span class="arch-badge" id="arch-navigability" title="AI navigability (0–100)">N –</span>
+    </div>
+    <button type="button" id="nebula-edges" class="hidden" title="Show dependency edges, coloured by relationship kind">Edges</button>
+    <button type="button" id="nebula-externals" class="hidden" title="Show external libraries on the outer orbit">Externals</button>
+    <button type="button" id="nebula-replay" class="hidden" title="Replay the genesis ignition wave">Replay</button>
+    <button type="button" id="arch-heat" class="hidden" title="Colour nodes by architectural score">Heatmap</button>
+    <button type="button" id="arch-actions-toggle" class="hidden" title="Show suggested remediation actions">Actions</button>
+  </div>
+
+  <aside id="hb-panel" class="hud" aria-hidden="true">
+    <h2>Happens-before · X before Y</h2>
+    <div class="hb-field">
+      <label for="hb-root">Root method (caller)</label>
+      <input type="text" id="hb-root" list="hb-roots" placeholder="fqn of the entry method…" autocomplete="off" />
+    </div>
+    <div class="hb-field">
+      <label for="hb-x">X — earlier call (callee)</label>
+      <input type="text" id="hb-x" list="hb-targets" placeholder="fqn of the call that should run first…" autocomplete="off" />
+    </div>
+    <div class="hb-field">
+      <label for="hb-y">Y — later call (callee)</label>
+      <input type="text" id="hb-y" list="hb-targets" placeholder="fqn of the call that should run after…" autocomplete="off" />
+    </div>
+    <button type="button" id="hb-check" class="primary">Check ordering</button>
+    <div id="hb-result"></div>
+    <datalist id="hb-roots"></datalist>
+    <datalist id="hb-targets"></datalist>
+  </aside>
+
+  <aside id="arch-panel" class="hud" aria-hidden="true">
+    <h2>Remediation actions</h2>
+    <div id="arch-actions"></div>
+  </aside>
+
+  <aside id="panel" class="hud" aria-hidden="true">
+    <div class="panel-top">
+      <strong id="panel-title">Node</strong>
+      <button type="button" id="panel-close" aria-label="Close">×</button>
+    </div>
+    <div id="panel-body"></div>
+  </aside>
+
+  <div id="hover-label" class="hud" aria-hidden="true"></div>
+
+  <div id="status" class="hud"></div>
+
+  <div id="edge-legend" class="hud hidden" aria-hidden="true"></div>
+
+  <script type="module" src="./app.mjs"></script>
+  <script>
+    window.addEventListener('error', function (ev) {
+      var el = document.getElementById('status');
+      if (!el) return;
+      // Keep `hud` so the status stays fixed at the bottom instead of re-flowing behind the topbar.
+      el.className = 'hud err';
+      el.textContent = 'JS error: ' + (ev.message || 'module (check your connection for the Three.js CDN)');
+    });
+  </script>
+</body>
+</html>

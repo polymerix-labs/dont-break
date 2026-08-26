@@ -1,0 +1,75 @@
+/**
+ * Copyright 2026 Polymerix
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * Design tokens, the single source of truth for the dashboard visual language.
+ * This charter (calm neutrals, one desaturated indigo accent, muted
+ * semantics, Inter for UI + Space Grotesk for display) is the product
+ * identity and will extend to the website.
+ *
+ * Rules:
+ * - one accent color (primary), declined for hover/active/subtle states
+ * - semantic colors reserved for meaning: verdict, severity, rule zones, sync
+ * - deep neutral gray ladder, never blue-tinted backgrounds
+ * - thin low-contrast borders instead of drop shadows
+ * - motion between 120ms and 200ms, ease-out
+ */
+
+:root {
+  /* Neutral ladder: deep, warm-neutral, quiet */
+  --db-background: #141415;
+  --db-surface: #1b1b1d;
+  --db-overlay: #242427;
+  --db-inset: #101011;
+  --db-border: #2b2b2f;
+  --db-border-strong: #3e3e45;
+
+  /* Text */
+  --db-foreground: #ececee;
+  --db-muted: #a0a0a7;
+  --db-faint: #6f6f77;
+
+  /* The single accent: our indigo, desaturated and confident */
+  --db-primary: #6f82e4;
+  --db-primary-hover: #8393ea;
+  --db-primary-active: #5d70d3;
+  --db-primary-subtle: rgba(111, 130, 228, 0.11);
+
+  /* Semantic: verdicts and severities, muted so they read as state, not noise */
+  --db-ok: #57b189;
+  --db-ok-subtle: rgba(87, 177, 137, 0.1);
+  --db-warn: #d0a05f;
+  --db-warn-subtle: rgba(208, 160, 95, 0.1);
+  --db-danger: #dc6b6b;
+  --db-danger-subtle: rgba(220, 107, 107, 0.1);
+
+  /* Semantic: rule zones on the graph and in the UI */
+  --db-zone-core: #cd8a55;
+  --db-zone-core-subtle: rgba(205, 138, 85, 0.11);
+  --db-zone-halo: #a98e69;
+  --db-zone-halo-subtle: rgba(169, 142, 105, 0.1);
+
+  /* Motion */
+  --db-dur-fast: 120ms;
+  --db-dur: 160ms;
+  --db-dur-slow: 200ms;
+  --db-ease: cubic-bezier(0.25, 0.6, 0.3, 1);
+
+  /* Radii: one family */
+  --db-radius-sm: 5px;
+  --db-radius: 7px;
+  --db-radius-lg: 10px;
+}

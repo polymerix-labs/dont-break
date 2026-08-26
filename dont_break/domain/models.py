@@ -1,0 +1,65 @@
+# Copyright 2026 Polymerix
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Value objects and small state groupings for the workspace project flow."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class WorkspaceId:
+    value: str
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass(frozen=True)
+class ProjectSlug:
+    value: str
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass(frozen=True)
+class ProjectPath:
+    value: str
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass
+class AuthState:
+    authenticated: bool = False
+    org_slug: str = ""
+    workspace_id: str = ""
+    pending_state: str | None = None
+    error: str = ""
+
+
+@dataclass
+class SyncState:
+    snapshot_saved: bool = False
+    error: str = ""
+
+
+@dataclass
+class GraphStreamState:
+    connected: bool = False
+    bootstrap_complete: bool = False
+    nodes_received: int = 0

@@ -1,0 +1,51 @@
+{
+  "name": "dont-break-ui",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "prebuild": "node scripts/copy-wire.mjs",
+    "build": "tsc -b && vite build && node scripts/stamp-nebula-assets.mjs && node scripts/check-bundle-budget.mjs && rsync -a --delete dist/ ../dont_break/static/",
+    "preview": "vite preview",
+    "lint": "eslint public/nebula",
+    "test:policy": "npx --yes tsx src/viewer/graphSessionPolicy.test.ts",
+    "test:wire": "npx --yes tsx src/wire/hostProtocol.test.ts && npx --yes tsx src/wire/syncProgress.test.ts && node public/nebula/overlays.test.mjs && node public/nebula/wave.test.mjs && node public/nebula/colors.test.mjs && node public/nebula/moduleGraph.test.mjs && node public/nebula/panelData.test.mjs && node public/nebula/cfgCompact.test.mjs && node public/nebula/viewerNotice.test.mjs && node public/nebula/graphStreamReconnect.test.mjs && node public/nebula/statusLine.test.mjs",
+    "test:rules": "npx --yes tsx src/pages/rules/ruleForm.test.ts && npx --yes tsx src/pages/rules/ruleDisplay.test.ts && npx --yes tsx src/pages/rules/SentinelPanel.test.ts && npx --yes tsx src/pages/overviewActivity.test.ts",
+    "test:overview": "npx --yes tsx src/pages/overviewActivity.test.ts",
+    "test:events": "npx --yes tsx src/api/ruleEventsQuery.test.ts && npx --yes tsx src/api/dashboardCheck.test.ts",
+    "test:assist": "npx --yes tsx src/api/assistProxy.test.ts",
+    "test:studio": "npx --yes tsx src/pages/rules/studio/simulation.test.ts && npx --yes tsx src/pages/rules/studio/journeys.test.ts",
+    "test:agents": "npx --yes tsx src/pages/agents/hookInstall.test.ts",
+    "test:lockdown": "npx --yes tsx src/shell/lockdownCopy.test.ts",
+    "test:i18n": "npx --yes tsx src/i18n/i18n.test.ts",
+    "test:welcome": "npx --yes tsx src/shell/welcomeGate.test.ts"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@radix-ui/react-dialog": "^1.1.19",
+    "@radix-ui/react-tabs": "^1.1.17",
+    "@radix-ui/react-toast": "^1.2.19",
+    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-router": "^1.170.17",
+    "cmdk": "^1.1.1",
+    "framer-motion": "^12.42.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

@@ -1,0 +1,37 @@
+# Copyright 2026 Polymerix
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dontbreak"
+# Rewritten to the release tag by CI (publish:pypi-alias) right before build —
+# see .gitlab-ci.yml. Never hand-edit; a stale version here just means CI
+# forgot to stamp it, not that this is the real version.
+version = "0.0.0"
+description = "Alias for dont-break — see https://pypi.org/project/dont-break/"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+authors = [{ name = "Polymerix", email = "hello@dont-break.com" }]
+dependencies = ["dont-break"]
+
+[project.urls]
+Homepage = "https://dont-break.com"
+Source = "https://github.com/polymerix-labs/dont-break"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dontbreak"]
