@@ -390,7 +390,7 @@ export function AgentsPage() {
             return;
         setMinting(true);
         try {
-            const minted = await mintAgentToken();
+            const minted = await mintAgentToken(agent.id);
             setSetup(applyMintedToken(setup, minted));
             setMintedTokenId(minted.token_id);
             persistTokenId(setup.project_id, minted.token_id);
@@ -414,7 +414,7 @@ export function AgentsPage() {
             return;
         setMinting(true);
         try {
-            const minted = await regenerateAgentToken(mintedTokenId);
+            const minted = await regenerateAgentToken(mintedTokenId, agent.id);
             setSetup(applyMintedToken(setup, minted));
             setMintedTokenId(minted.token_id);
             persistTokenId(setup.project_id, minted.token_id);

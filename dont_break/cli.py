@@ -25,6 +25,11 @@ from dont_break.wake import run_wake
 def main() -> None:
     parser = argparse.ArgumentParser(prog="dont-break", description="Polymerix local front")
     parser.add_argument("--wake", action="store_true", help="Start auth flow and open Nebula UI")
+    parser.add_argument(
+        "--logout",
+        action="store_true",
+        help="Forget the sign-in saved on this machine",
+    )
     parser.add_argument("--verbose", action="store_true", help="Verbose facts-extract logs")
     parser.add_argument(
         "--project",
@@ -38,6 +43,19 @@ def main() -> None:
     )
     parser.add_argument("--version", action="version", version=f"dont-break {__version__}")
     args = parser.parse_args()
+
+    if args.logout:
+
+
+
+        from dont_break.application.auth_service import AuthService
+        from dont_break.application.session_store import SessionStore
+
+        had_token = AuthService(SessionStore()).sign_out()
+        print(
+            "Signed out." if had_token else "Not signed in on this machine."
+        )
+        return
 
     if args.wake:
         try:

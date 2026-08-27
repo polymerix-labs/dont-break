@@ -44,21 +44,43 @@ class AuthService:
     async def restore_saved_session(
         self, settings: Settings, creds: StoredCredentials | None = None
     ) -> bool:
+        return (await self.restore_saved_session_as(settings, creds)) is not None
+
+    async def restore_saved_session_as(
+        self, settings: Settings, creds: StoredCredentials | None = None
+    ) -> str | None:
+        """Restore, returning the user id the saved token actually acts as.
+
+        The caller prints that id. A token stays usable for its whole
+        lifetime even when the account behind it was deleted or removed from
+        the workspace — the gateway checks the signature, not whether the
+        person still exists — so reusing one silently can attribute a full
+        session of syncs and rule approvals to a stale account. Showing the
+        identity is what makes that visible instead of invisible.
+        """
         creds = creds or self._credentials.load()
         token = creds.token.strip()
         org_slug = creds.org_slug.strip()
         if not is_valid_access_token(token):
-            return False
+            return None
         gateway = self._gateway_for(settings)
         owned = self._gateway is None
         try:
-            if not await gateway.verify_token(token):
-                return False
+            user_id = await gateway.identify(token)
         finally:
             if owned:
                 await gateway.aclose()
+        if not user_id:
+            return None
         await self._store.restore_auth(org_slug)
-        return True
+        return user_id
+
+    def sign_out(self) -> bool:
+        """Forget the saved token. Returns whether there was one to forget."""
+        creds = self._credentials.load()
+        had_token = bool(creds.token.strip())
+        self._credentials.save(StoredCredentials())
+        return had_token
 
     async def begin_browser_sign_in(self, settings: Settings) -> str:
         state = new_auth_state()

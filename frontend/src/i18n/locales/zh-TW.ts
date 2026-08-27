@@ -620,6 +620,8 @@ const messages: Messages = {
     "rules.unavailable.tech": "Rules proxy returned an error. Verify gateway connectivity and workspace snapshot status in Settings.",
     "nav.collapse": "收合",
     "nav.expand": "展開",
+    "nav.teamDashboard": "團隊儀表板",
+    "nav.teamDashboard.hint": "在網頁上查看所有儲存庫與代理",
     "overview.sentence.healthy": "Solid foundation. Your rules are enforced on every agent edit.",
     "overview.sentence.healthy.tech": "Sound structure. Active rules are enforced on every check_change.",
     "overview.sentence.healthy.none": "Solid foundation, but nothing is protected yet. The next agent edit will still be checked.",

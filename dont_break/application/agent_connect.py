@@ -42,7 +42,21 @@ AGENT_MCP_SCOPES = (
     "rules:propose",
     "assist:run",
 )
-AGENT_MCP_LABEL = "Cursor MCP"
+
+
+
+
+
+
+
+AGENT_MCP_LABELS: dict[str, str] = {
+    "cursor": "Cursor",
+    "claude-code": "Claude Code",
+    "claude-desktop": "Claude Desktop",
+    "ci": "CI",
+    "other": "MCP client",
+}
+DEFAULT_AGENT_MCP_LABEL = "MCP client"
 
 SKILL_FILENAME = "AGENTS.md"
 SKILL_MARKER_START = "<!-- dont-break:skill:start -->"
@@ -98,11 +112,15 @@ async def _find_existing_agent_token(
         tokens = await gateway.list_api_tokens(session_token)
     except GatewayError:
         return None
+
+
+
+    agent_scopes = set(AGENT_MCP_SCOPES)
     candidates = [
         item
         for item in tokens
         if item.get("project_id") == project_id
-        and item.get("label") == AGENT_MCP_LABEL
+        and set(item.get("scopes") or []) == agent_scopes
         and not item.get("revoked_at")
     ]
     if not candidates:
@@ -164,8 +182,17 @@ async def mint_agent_mcp_token(
     store: SessionStore,
     creds: StoredCredentials,
     gateway: GatewayClient | None = None,
+    target: str = "cursor",
 ) -> dict[str, Any]:
-    """Create an Agent MCP `dbt_` token for the linked project."""
+    """Create an Agent MCP `dbt_` token for the linked project.
+
+    `target` is whichever tile the user had selected on the Agents page
+    (cursor/claude-code/claude-desktop/ci/other) — it becomes the token's
+    label, which is what later shows up as `agent_label` on every check and
+    rule event this token produces. Getting this right is the only way the
+    activity dashboard can tell a CI enforcement run from a developer's
+    local session.
+    """
     session_token = creds.token.strip()
     if not store.authenticated or not is_valid_access_token(session_token):
         raise MintTokenError("Sign in first before connecting an agent.")
@@ -175,6 +202,8 @@ async def mint_agent_mcp_token(
     if not workspace_id or not project_id:
         raise MintTokenError("Link this folder to a registered project first.")
 
+    label = AGENT_MCP_LABELS.get(target, DEFAULT_AGENT_MCP_LABEL)
+
     owned = gateway is None
     client = gateway or GatewayClient(settings)
     try:
@@ -182,7 +211,7 @@ async def mint_agent_mcp_token(
             session_token,
             workspace_id=workspace_id,
             project_id=project_id,
-            label=AGENT_MCP_LABEL,
+            label=label,
             scopes=list(AGENT_MCP_SCOPES),
         )
     except GatewayError as exc:
@@ -240,6 +269,7 @@ async def regenerate_agent_mcp_token(
     creds: StoredCredentials,
     previous_token_id: str = "",
     gateway: GatewayClient | None = None,
+    target: str = "cursor",
 ) -> dict[str, Any]:
     """Revoke the previous token (if known) then mint a new one."""
     owned = gateway is None
@@ -249,7 +279,9 @@ async def regenerate_agent_mcp_token(
             await revoke_agent_token(
                 settings, creds, previous_token_id, gateway=client
             )
-        return await mint_agent_mcp_token(settings, store, creds, gateway=client)
+        return await mint_agent_mcp_token(
+            settings, store, creds, gateway=client, target=target
+        )
     finally:
         if owned:
             await client.aclose()

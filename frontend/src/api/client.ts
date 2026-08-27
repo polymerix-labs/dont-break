@@ -145,8 +145,12 @@ export async function fetchAgentSetup(): Promise<AgentSetup | null> {
         return null;
     return parseJson<AgentSetup>(res);
 }
-export async function mintAgentToken(): Promise<MintedAgentToken> {
-    const res = await fetch(LocalRoutes.AGENTS_MINT_TOKEN, { method: "POST" });
+export async function mintAgentToken(target: string = "cursor"): Promise<MintedAgentToken> {
+    const res = await fetch(LocalRoutes.AGENTS_MINT_TOKEN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target }),
+    });
     const body = await parseJson<Partial<MintedAgentToken> & {
         error?: string;
     }>(res);
@@ -167,11 +171,11 @@ export async function mintAgentToken(): Promise<MintedAgentToken> {
         mcp_package: body.mcp_package ?? "",
     };
 }
-export async function regenerateAgentToken(previousTokenId: string): Promise<MintedAgentToken> {
+export async function regenerateAgentToken(previousTokenId: string, target: string = "cursor"): Promise<MintedAgentToken> {
     const res = await fetch(LocalRoutes.AGENTS_REGENERATE_TOKEN, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ previous_token_id: previousTokenId }),
+        body: JSON.stringify({ previous_token_id: previousTokenId, target }),
     });
     const body = await parseJson<Partial<MintedAgentToken> & {
         error?: string;

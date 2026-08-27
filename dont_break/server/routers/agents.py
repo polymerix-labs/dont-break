@@ -57,12 +57,15 @@ async def agents_setup(
 
 @router.post(LocalRoutes.AGENTS_MINT_TOKEN)
 async def agents_mint_token(
+    request: Request,
     store: SessionStore = Depends(get_session_store_dep),
     gateway: GatewayClient = Depends(get_gateway_dep),
 ) -> JSONResponse:
+    body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+    target = str(body.get("target") or "cursor").strip() if isinstance(body, dict) else "cursor"
     try:
         payload = await mint_agent_mcp_token(
-            Settings(), store, load_credentials(), gateway=gateway
+            Settings(), store, load_credentials(), gateway=gateway, target=target
         )
     except MintTokenError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
@@ -77,8 +80,10 @@ async def agents_regenerate_token(
 ) -> JSONResponse:
     body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
     previous = ""
+    target = "cursor"
     if isinstance(body, dict):
         previous = str(body.get("previous_token_id") or "").strip()
+        target = str(body.get("target") or "cursor").strip()
     try:
         payload = await regenerate_agent_mcp_token(
             Settings(),
@@ -86,6 +91,7 @@ async def agents_regenerate_token(
             load_credentials(),
             previous_token_id=previous,
             gateway=gateway,
+            target=target,
         )
     except MintTokenError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)

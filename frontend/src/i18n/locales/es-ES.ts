@@ -620,6 +620,8 @@ const messages: Messages = {
     "rules.unavailable.tech": "Rules proxy returned an error. Verify gateway connectivity and workspace snapshot status in Settings.",
     "nav.collapse": "Contraer",
     "nav.expand": "Expandir",
+    "nav.teamDashboard": "Panel del equipo",
+    "nav.teamDashboard.hint": "Todos los repositorios y agentes, en la web",
     "overview.sentence.healthy": "Base sólida. Tus reglas se aplican en cada edición del agente.",
     "overview.sentence.healthy.tech": "Estructura sana. Las reglas activas se aplican en cada check_change.",
     "overview.sentence.healthy.none": "Solid foundation, but nothing is protected yet. The next agent edit will still be checked.",

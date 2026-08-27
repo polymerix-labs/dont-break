@@ -34,6 +34,8 @@ export const en = {
     "nav.settings": "Settings",
     "nav.collapse": "Collapse",
     "nav.expand": "Expand",
+    "nav.teamDashboard": "Team dashboard",
+    "nav.teamDashboard.hint": "Every repo and agent, on the web",
     "header.chooseProject": "Choose project folder",
     "header.choosingFolder": "Choosing folder...",
     "header.changeProjectTitle": "Change project folder",

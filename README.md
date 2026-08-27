@@ -60,6 +60,10 @@ Plug dont-break into Cursor or Claude Desktop. Your agent checks impact and dang
 One job that fails the merge when a change hits a protected zone or a fragile hub, grounded in the real dependency graph, not vibes.<br>
 → [GitHub Actions](https://github.com/polymerix-labs/dont-break/blob/main/docs/agents/github-actions.md) · [GitLab CI](https://github.com/polymerix-labs/dont-break/blob/main/docs/agents/gitlab-ci.md) · [pre-commit hook](https://github.com/polymerix-labs/dont-break/blob/main/docs/agents/pre-commit.md)
 
+**"My team needs to see this, not just me"**<br>
+Everything above runs on your machine — what your agent is doing, right now, on your working copy. [dont-break.com](https://dont-break.com) is the other half: every repository, every agent, and what CI actually enforced on the default branch, in one place.<br>
+→ [Team dashboard](https://dont-break.com)
+
 **"I just want to interrogate my codebase"**<br>
 `dbq dependents <id> | jq`: who breaks if I change this? Your repo becomes a queryable database.<br>
 → [Shell + jq recipes](https://github.com/polymerix-labs/dont-break/blob/main/docs/agents/shell.md)

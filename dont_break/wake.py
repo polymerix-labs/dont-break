@@ -26,6 +26,7 @@ from dont_break.credentials import load_credentials
 from dont_break.domain.errors import GatewayError, ProjectLimitError
 from dont_break.intro import play_intro
 from dont_break.server.app import create_app
+from dont_break.wake_preflight import port_free, resolve_port_conflict
 
 console = Console()
 
@@ -51,14 +52,35 @@ async def run_wake(
     host = settings.host
     port = settings.port
 
+
+
+
+
+    if not port_free(host, port):
+        action, port = await resolve_port_conflict(console, host, port)
+        if action == "reuse":
+            app_url = f"http://{host}:{port}/"
+            console.print(f"Opening {app_url}")
+            webbrowser.open(app_url)
+            return
+
     config = uvicorn.Config(create_app(), host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
     server_task = asyncio.create_task(server.serve())
     await asyncio.sleep(0.4)
 
     creds = load_credentials()
-    if await auth.restore_saved_session(settings, creds):
-        console.print("[green]Signed in (saved credentials).[/green]")
+    restored_as = await auth.restore_saved_session_as(settings, creds)
+    if restored_as:
+
+
+
+
+        console.print(
+            f"[green]Signed in as[/green] [bold]{restored_as}[/bold]"
+            f"{f' · {creds.org_slug}' if creds.org_slug else ''} "
+            f"[dim](saved credentials — dont-break --logout to switch)[/dim]"
+        )
     else:
         if creds.token:
             console.print("[yellow]Saved credentials expired — sign in again.[/yellow]")

@@ -83,12 +83,31 @@ class GatewayClient:
         return headers
 
     async def verify_token(self, token: str) -> bool:
+        return await self.identify(token) is not None
+
+    async def identify(self, token: str) -> str | None:
+        """The user id this token actually acts as, or None if it is refused.
+
+        Returning the id rather than a bare bool is what lets `--wake` say
+        *who* it signed in as. A saved token outliving the account that made
+        it looks identical to a good one from the CLI's side, so the only
+        defence a person has is seeing the identity printed.
+        """
         url = f"{self.base_url}{GatewayRoutes.ME}"
         try:
             res = await self._client.get(url, headers=self._headers(token))
-            return res.status_code == 200
         except httpx.HTTPError:
-            return False
+            return None
+        if res.status_code != 200:
+            return None
+        try:
+            payload = res.json()
+        except ValueError:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        user_id = str(payload.get("user_id") or "").strip()
+        return user_id or None
 
     async def list_projects(self, token: str) -> list[dict[str, Any]]:
         payload = await self._get_json(token, GatewayRoutes.ME_PROJECTS)

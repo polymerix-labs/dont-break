@@ -67,6 +67,10 @@ const SettingsIcon = icon(<>
     <circle cx="5.5" cy="8" r="1.4" fill="var(--db-inset)"/>
     <circle cx="9" cy="11.5" r="1.4" fill="var(--db-inset)"/>
   </>);
+const TeamDashboardIcon = icon(<>
+    <rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/>
+    <path d="M5.5 14h5M8 11.5V14"/>
+  </>);
 const NAV: readonly {
     to: string;
     labelKey: MessageKey;
@@ -114,7 +118,19 @@ export function Sidebar() {
             </Link>);
         })}
       </nav>
-      <div className="p-2.5">
+      
+      <div className="border-t border-line p-2.5">
+        <a href="https://dont-break.com/app/overview" target="_blank" rel="noreferrer" title={collapsed ? t("nav.teamDashboard") : undefined} className={cn("flex items-center gap-3 rounded px-2.5 py-1.5 text-sm text-faint transition-colors duration-fast hover:text-foreground", collapsed && "justify-center px-0")}>
+          <TeamDashboardIcon className="opacity-80"/>
+          {collapsed ? null : (<span className="min-w-0 flex-1">
+              <span className="block truncate">{t("nav.teamDashboard")}</span>
+              <span className="block truncate text-[11px] text-faint/70">
+                {t("nav.teamDashboard.hint")}
+              </span>
+            </span>)}
+        </a>
+      </div>
+      <div className="p-2.5 pt-0">
         <button type="button" onClick={toggle} title={collapsed ? t("nav.expand") : t("nav.collapse")} aria-expanded={!collapsed} className={cn("flex w-full items-center gap-3 rounded px-2.5 py-1.5 text-sm text-faint transition-colors duration-fast hover:text-muted", collapsed && "justify-center px-0")}>
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" className={cn("h-4 w-4 shrink-0 transition-transform duration-slow", collapsed && "rotate-180")} aria-hidden>
             <path d="M9.5 4 5.5 8l4 4"/>
