@@ -16,11 +16,12 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { createProject, fetchFactsExtractStatus, linkProject, listProjects, saveLockdownPolicy, syncProject, updateFactsExtract, type FactsExtractStatus, type LockdownStatus, type RegisteredProject, } from "../api/client";
+import { createProject, fetchFactsExtractStatus, linkProject, listProjects, saveLockdownPolicy, fetchWriteMode, saveWriteMode, type WriteModeStatus, syncProject, updateFactsExtract, type FactsExtractStatus, type LockdownStatus, type RegisteredProject, } from "../api/client";
 import { Button, Card, CardHeader, Reveal, useToast } from "../design";
 import { LockdownPolicySelects, useLockdownStatus } from "../shell/LockdownBanner";
 import { LOCALES, setLocale, setVoice, useLocale, useT, useVoice, type LocaleCode, type Voice, } from "../i18n";
 import { useProjectPick } from "../shell/AppShell";
+import { humanName } from "../api/session";
 import { useSessionContext } from "../shell/SessionContext";
 import { syncStatusLabel } from "../wire/syncProgress";
 function SettingsIllustration({ className }: {
@@ -133,6 +134,62 @@ function VoiceSelect() {
       </div>
     </div>);
 }
+function WriteModeCard() {
+    const t = useT();
+    const toast = useToast();
+    const [status, setStatus] = useState<WriteModeStatus | null>(null);
+    const [busy, setBusy] = useState(false);
+    useEffect(() => {
+        void fetchWriteMode().then(setStatus).catch(() => setStatus(null));
+    }, []);
+    async function setMode(mode: "watch" | "hard") {
+        setBusy(true);
+        try {
+            setStatus(await saveWriteMode(mode));
+            toast({ title: t("hard.saved"), tone: "ok" });
+        }
+        catch (err) {
+            toast({
+                title: t("hard.failed"),
+                detail: err instanceof Error ? err.message : undefined,
+                tone: "danger",
+            });
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+    return (<Card>
+      <CardHeader title={t("hard.title")}/>
+      <div className="space-y-2.5 border-b border-line px-4 py-3">
+        <p className="text-xs text-muted">{t("hard.intro")}</p>
+        <dl className="space-y-1.5">
+          <ModeLine term={t("hard.modeWatch")} description={t("hard.watchLine")}/>
+          <ModeLine term={t("hard.modeHard")} description={t("hard.hardLine")}/>
+        </dl>
+        <p className="text-xs text-faint">{t("hard.limits")}</p>
+      </div>
+      <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+        <p className="min-w-0 text-xs text-faint">{t("hard.scope")}</p>
+        <div className="flex shrink-0 gap-1.5">
+          {(["watch", "hard"] as const).map((mode) => (<button key={mode} type="button" disabled={busy || !status} onClick={() => void setMode(mode)} className={status?.mode === mode
+                ? "rounded border border-primary/60 bg-primary-subtle px-2.5 py-1.5 text-sm text-foreground"
+                : "rounded border border-line bg-inset px-2.5 py-1.5 text-sm text-muted"}>
+              {t(mode === "hard" ? "hard.modeHard" : "hard.modeWatch")}
+            </button>))}
+        </div>
+      </div>
+    </Card>);
+}
+function ModeLine({ term, description }: {
+    term: string;
+    description: string;
+}) {
+    return (<div className="flex gap-2.5 text-xs">
+      <dt className="w-12 shrink-0 font-medium text-foreground">{term}</dt>
+      <dd className="min-w-0 text-muted">{description}</dd>
+    </div>);
+}
 function LockdownPolicyCard() {
     const t = useT();
     const toast = useToast();
@@ -159,12 +216,13 @@ function LockdownPolicyCard() {
     }
     return (<Card>
       <CardHeader title={t("lockdown.policy")}/>
-      <div className="flex items-center justify-between gap-4 px-4 py-2.5">
-        <p className="min-w-0 text-xs text-muted">{t("lockdown.policyHint")}</p>
-        {status ? (<div className="flex shrink-0 items-center gap-2">
-            <LockdownPolicySelects status={status} busy={busy} onPolicy={(patch) => void handlePolicy(patch)}/>
-          </div>) : null}
+      <div className="space-y-1 border-b border-line px-4 py-3">
+        <p className="text-xs text-muted">{t("lockdown.policyHint")}</p>
+        <p className="text-xs text-faint">{t("lockdown.policyNote")}</p>
       </div>
+      {status ? (<div className="flex items-center justify-end gap-2 px-4 py-2.5">
+          <LockdownPolicySelects status={status} busy={busy} onPolicy={(patch) => void handlePolicy(patch)}/>
+        </div>) : null}
     </Card>);
 }
 export function SettingsPage() {
@@ -312,6 +370,9 @@ export function SettingsPage() {
       </Reveal>
 
       <Reveal delay={0.14}>
+        <WriteModeCard />
+      </Reveal>
+      <Reveal delay={0.16}>
         <LockdownPolicyCard />
       </Reveal>
 
@@ -339,8 +400,9 @@ export function SettingsPage() {
               {t("settings.supportHint")}
             </p>
             <div className="divide-y divide-line">
-              <Row label={t("settings.organization")} value={session?.org_name || session?.org_slug || ""}/>
-              <Row label={t("settings.workspace")} value={session?.project_display_name || ""}/>
+              <Row label={t("settings.organization")} value={humanName(session?.org_name) || humanName(session?.org_slug)}/>
+              <Row label={t("settings.project")} value={humanName(session?.project_display_name) ||
+            humanName(session?.project_slug)}/>
               <Row label={t("settings.authenticated")} value={session?.authenticated ? t("common.yes") : t("common.no")}/>
               <Row label={t("settings.snapshotSaved")} value={session?.snapshot_saved ? t("common.yes") : t("common.no")}/>
               <Row label={t("settings.appVersion")} value={session?.app_version || ""} mono/>

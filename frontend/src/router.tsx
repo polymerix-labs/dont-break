@@ -19,6 +19,7 @@ import { AppShell } from "./shell/AppShell";
 import { AgentsPage } from "./pages/agents/AgentsPage";
 import { GraphPage } from "./pages/GraphPage";
 import { OverviewPage } from "./pages/OverviewPage";
+import { IncidentDetailPage } from "./pages/rules/IncidentDetailPage";
 import { RulesPage } from "./pages/rules/RulesPage";
 import { RuleStudioPage } from "./pages/rules/studio/RuleStudioPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -50,6 +51,11 @@ const ruleStudioRoute = createRoute({
     path: "/rules/studio",
     component: RuleStudioPage,
 });
+const incidentRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/rules/incidents/$incidentId",
+    component: IncidentDetailPage,
+});
 const agentsRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/agents",
@@ -66,6 +72,7 @@ const routeTree = rootRoute.addChildren([
     graphRoute,
     rulesRoute,
     ruleStudioRoute,
+    incidentRoute,
     agentsRoute,
     settingsRoute,
 ]);

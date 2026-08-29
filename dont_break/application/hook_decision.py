@@ -14,15 +14,15 @@
 
 """Local hook decision: protected-paths cache plus an in-process lockdown.
 
-A cache miss, an unmapped folder, a path outside the repo, or a backend that
-does not answer still allow. A lock already known locally does not: expiration
-is compared at this decision, and the network is not consulted. The project is
-resolved from the folder mapping, never from the session store.
+Watch mode still allows when the cache, mapping, or backend is missing.
+Hard mode does not: if this workspace is Hard and the write cannot be
+proven allowed, it is denied. A lock already known locally still denies
+without the network.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional
 
 from dont_break.application.lockdown import LockdownStore
@@ -30,6 +30,9 @@ from dont_break.application.protected_paths_cache import (
     ProtectedPathsCache,
     ProtectedRule,
 )
+from dont_break.application.recent_checks import RecentCheckStore
+from dont_break.application.write_mode import WriteModeStore
+from dont_break.hooks.write_payload import observation_fields
 from dont_break.project.mapping import (
     FolderProjectStore,
     ProjectMapping,
@@ -38,6 +41,15 @@ from dont_break.project.mapping import (
 
 ALLOW = "allow"
 DENY = "deny"
+
+UNVERIFIED = (
+    "dont-break: Hard mode cannot verify this write. "
+    "Call check_change with this path. If the verdict is block, do not write."
+)
+UNCHECKED = (
+    "dont-break: this file is protected and has not been checked. "
+    "Call check_change with this path. If the verdict is block, do not write."
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +62,7 @@ class HookDecision:
     relative_path: str = ""
     conversation_id: str = ""
     tool_name: str = ""
+    extra: dict[str, Any] = field(default_factory=dict)
 
     def as_hook_response(self) -> dict[str, str]:
         body: dict[str, str] = {"permission": self.permission}
@@ -64,6 +77,17 @@ def allow(**kwargs: Any) -> HookDecision:
     return HookDecision(permission=ALLOW, **kwargs)
 
 
+def deny_unverified(**kwargs: Any) -> HookDecision:
+    return HookDecision(
+        permission=DENY,
+        agent_message=kwargs.pop("agent_message", UNVERIFIED),
+        user_message=kwargs.pop(
+            "user_message", "Hard mode: write refused because it could not be verified."
+        ),
+        **kwargs,
+    )
+
+
 class HookDecisionService:
     def __init__(
         self,
@@ -72,22 +96,67 @@ class HookDecisionService:
         *,
         enforce_blocks: bool = False,
         locks: LockdownStore | None = None,
+        write_modes: WriteModeStore | None = None,
+        recent_checks: RecentCheckStore | None = None,
     ) -> None:
         self._cache = cache
         self._mappings = mappings
         self.enforce_blocks = enforce_blocks
         self._locks = locks
+        self._write_modes = write_modes
+        self._recent_checks = recent_checks
+
+    def is_hard(self, payload: Mapping[str, Any]) -> bool:
+        if self._write_modes is None:
+            return False
+        workspace_root = str(payload.get("workspace_root") or "").strip()
+        if workspace_root and self._write_modes.is_hard(workspace_root):
+            return True
+        file_path = str(payload.get("file_path") or "").strip()
+        if not file_path:
+            return False
+        try:
+            mapping = self._mappings.for_file(file_path, workspace_root)
+        except Exception:
+            return bool(workspace_root and self._write_modes.is_hard(workspace_root))
+        if mapping is None:
+            return False
+        return self._write_modes.is_hard(mapping.folder)
 
     async def decide(self, payload: Mapping[str, Any]) -> HookDecision:
+        hard = self.is_hard(payload)
+        conversation_id = str(payload.get("conversation_id") or "").strip()
+        tool_name = str(payload.get("tool_name") or "").strip()
+        extra = observation_fields(payload)
+        extra["permission_preview"] = ALLOW
         try:
             located = self._locate(payload)
         except Exception:
-            return allow()
+            if hard:
+                return deny_unverified(
+                    conversation_id=conversation_id,
+                    tool_name=tool_name,
+                    extra=extra,
+                )
+            return allow(
+                conversation_id=conversation_id,
+                tool_name=tool_name,
+                extra=extra,
+            )
         if located is None:
-            conversation_id = str(payload.get("conversation_id") or "").strip()
-            tool_name = str(payload.get("tool_name") or "").strip()
-            return allow(conversation_id=conversation_id, tool_name=tool_name)
+            if hard:
+                return deny_unverified(
+                    conversation_id=conversation_id,
+                    tool_name=tool_name,
+                    extra=extra,
+                )
+            return allow(
+                conversation_id=conversation_id,
+                tool_name=tool_name,
+                extra=extra,
+            )
         mapping, relative, conversation_id, tool_name = located
+        extra["relative_path"] = relative
         if self._locks is not None:
             locked = self._locks.active(
                 mapping.workspace_id, mapping.project_slug, conversation_id
@@ -104,15 +173,27 @@ class HookDecisionService:
                     relative_path=relative,
                     conversation_id=conversation_id,
                     tool_name=tool_name,
+                    extra=extra,
                 )
         try:
-            return await self._match_rules(mapping, relative, conversation_id, tool_name)
+            return await self._match_rules(
+                mapping, relative, conversation_id, tool_name, extra, payload
+            )
         except Exception:
+            if self._write_modes is not None and self._write_modes.is_hard(mapping.folder):
+                return deny_unverified(
+                    mapping=mapping,
+                    relative_path=relative,
+                    conversation_id=conversation_id,
+                    tool_name=tool_name,
+                    extra=extra,
+                )
             return allow(
                 mapping=mapping,
                 relative_path=relative,
                 conversation_id=conversation_id,
                 tool_name=tool_name,
+                extra=extra,
             )
 
     def _locate(
@@ -132,20 +213,48 @@ class HookDecisionService:
             return None
         return mapping, relative, conversation_id, tool_name
 
+    def _parent_ids(self, conversation_id: str, payload: Mapping[str, Any]) -> tuple[str, ...]:
+        found: list[str] = []
+        parent = str(payload.get("parent_conversation_id") or "").strip()
+        if parent:
+            found.append(parent)
+        if self._locks is not None and conversation_id:
+            root = self._locks.root_conversation(conversation_id)
+            if root and root != conversation_id and root not in found:
+                found.append(root)
+        return tuple(found)
+
     async def _match_rules(
         self,
         mapping: ProjectMapping,
         relative: str,
         conversation_id: str,
         tool_name: str,
+        extra: dict[str, Any] | None = None,
+        payload: Mapping[str, Any] | None = None,
     ) -> HookDecision:
+        extra = extra or {}
+        payload = payload or {}
+        hard = (
+            self._write_modes is not None
+            and self._write_modes.is_hard(mapping.folder)
+        )
         entry = await self._cache.ensure(mapping.workspace_id, mapping.project_slug)
         if entry is None:
+            if hard:
+                return deny_unverified(
+                    mapping=mapping,
+                    relative_path=relative,
+                    conversation_id=conversation_id,
+                    tool_name=tool_name,
+                    extra=extra,
+                )
             return allow(
                 mapping=mapping,
                 relative_path=relative,
                 conversation_id=conversation_id,
                 tool_name=tool_name,
+                extra=extra,
             )
 
         matched = entry.match(relative)
@@ -155,6 +264,48 @@ class HookDecisionService:
                 relative_path=relative,
                 conversation_id=conversation_id,
                 tool_name=tool_name,
+                extra=extra,
+            )
+
+        if hard:
+            permit = (
+                self._recent_checks.lookup(
+                    relative,
+                    conversation_id=conversation_id,
+                    parent_ids=self._parent_ids(conversation_id, payload),
+                )
+                if self._recent_checks
+                else None
+            )
+            if permit is None or permit.verdict == "block":
+                reason = (
+                    UNCHECKED
+                    if permit is None
+                    else (
+                        f"dont-break: check_change blocked {relative}. Do not write this file."
+                    )
+                )
+                return HookDecision(
+                    permission=DENY,
+                    agent_message=reason,
+                    user_message=f"{relative} is protected. A check must pass first.",
+                    matched=matched,
+                    mapping=mapping,
+                    relative_path=relative,
+                    conversation_id=conversation_id,
+                    tool_name=tool_name,
+                    extra=extra,
+                )
+            return allow(
+                agent_message=(
+                    f"dont-break: {relative} was checked ({permit.verdict}). Write allowed."
+                ),
+                mapping=mapping,
+                relative_path=relative,
+                conversation_id=conversation_id,
+                tool_name=tool_name,
+                extra=extra,
+                matched=matched,
             )
 
         agent_message = (
@@ -179,6 +330,7 @@ class HookDecisionService:
                 relative_path=relative,
                 conversation_id=conversation_id,
                 tool_name=tool_name,
+                extra=extra,
             )
         return HookDecision(
             permission=ALLOW,
@@ -189,4 +341,5 @@ class HookDecisionService:
             relative_path=relative,
             conversation_id=conversation_id,
             tool_name=tool_name,
+            extra=extra,
         )

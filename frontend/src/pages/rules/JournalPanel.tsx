@@ -220,7 +220,7 @@ export function JournalPanel({ days = 7 }: {
             target,
         });
         if (event.kind === "checked" && event.files_count != null) {
-            sentence += ` · ${t("metrics.filesChecked", { count: event.files_count })}`;
+            sentence += ` · ${t(event.files_count === 1 ? "metrics.filesChecked.one" : "metrics.filesChecked", { count: event.files_count })}`;
         }
         if (event.kind === "lockdown_released" && event.release_origin) {
             sentence += ` · ${event.release_origin === "expiration"

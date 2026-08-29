@@ -18,16 +18,65 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import datetime
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 
+from dont_break.application.workspace_resolve import resolve_workspace_id
+from dont_break.credentials import load_credentials
+from dont_break.infrastructure.gateway_routes import GatewayRoutes
 from dont_break.server.deps import wire_app_services
 from dont_break.server.static_root import static_root
 
 logger = logging.getLogger(__name__)
+
+
+async def refresh_recent_checks(app: FastAPI) -> None:
+    """Pull recent check_change events into the local permit store."""
+    checks = getattr(app.state, "recent_checks", None)
+    gateway = getattr(app.state, "gateway", None)
+    store = getattr(app.state, "session_store", None)
+    if checks is None or gateway is None or store is None:
+        return
+    token = (load_credentials().token or "").strip()
+    workspace = resolve_workspace_id(store)
+    slug = store.project_slug.strip()
+    if not token or not workspace or not slug:
+        return
+    path = GatewayRoutes.rules(workspace, slug, "/activity")
+    response = await gateway.api_request(token, "GET", path)
+    if response.status_code >= 400:
+        return
+    try:
+        body = response.json()
+    except ValueError:
+        return
+    if not isinstance(body, dict):
+        return
+    for event in body.get("events") or []:
+        if not isinstance(event, dict):
+            continue
+        files = event.get("files") or []
+        verdict = str(event.get("verdict") or "ok")
+        raw_at = event.get("at")
+        stamp = None
+        if isinstance(raw_at, str):
+            try:
+                stamp = datetime.datetime.fromisoformat(
+                    raw_at.replace("Z", "+00:00")
+                ).timestamp()
+            except ValueError:
+                stamp = None
+        checks.remember_event_files(
+            [str(item) for item in files if item],
+            verdict,
+            at=stamp,
+            conversation_id=str(event.get("agent_session_id") or ""),
+            source="activity",
+        )
 
 
 async def freshness_poller(app: FastAPI) -> None:
@@ -36,12 +85,20 @@ async def freshness_poller(app: FastAPI) -> None:
     if cache is None:
         return
     interval = getattr(cache, "poll_interval", 5.0)
+    try:
+        await refresh_recent_checks(app)
+    except Exception:
+        logger.exception("recent-check poll failed")
     while True:
         await asyncio.sleep(interval)
         try:
             await cache.poll()
         except Exception:
             logger.exception("protected-paths freshness poll failed")
+        try:
+            await refresh_recent_checks(app)
+        except Exception:
+            logger.exception("recent-check poll failed")
 
 
 async def watch_supervisor(app: FastAPI) -> None:

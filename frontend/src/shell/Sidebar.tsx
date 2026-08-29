@@ -18,7 +18,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../design";
 import { useT, type MessageKey } from "../i18n";
-import { useSessionContext } from "./SessionContext";
+import { useUiStore } from "./uiStore";
 const STORAGE_KEY = "dont-break.sidebar";
 function initialCollapsed(): boolean {
     try {
@@ -90,9 +90,8 @@ const NAV: readonly {
 export function Sidebar() {
     const pathname = useRouterState({ select: (s) => s.location.pathname });
     const [collapsed, setCollapsed] = useState(initialCollapsed);
-    const { session } = useSessionContext();
     const t = useT();
-    const supportHref = session?.support_url || "https://dont-break.com/app/overview?support=1";
+    const setSupportOpen = useUiStore((s) => s.setSupportOpen);
     const onStudio = pathname.startsWith("/rules/studio");
     const beforeStudio = useRef<boolean | null>(null);
     useEffect(() => {
@@ -125,9 +124,9 @@ export function Sidebar() {
             </Link>);
         })}
         <div className="mt-auto pt-2">
-          <a href={supportHref} target="_blank" rel="noreferrer" title={t("nav.feedback")} className={cn("flex rounded-lg border border-line bg-inset text-faint transition-colors duration-fast hover:border-line-strong hover:text-foreground", collapsed
+          <button type="button" onClick={() => setSupportOpen(true)} title={t("nav.feedback")} className={cn("flex rounded-lg border border-line bg-inset text-left text-faint transition-colors duration-fast hover:border-line-strong hover:text-foreground", collapsed
             ? "h-8 w-8 items-center justify-center"
-            : "min-h-[5.5rem] flex-col items-start justify-between p-2.5")}>
+            : "min-h-[5.5rem] w-full flex-col items-start justify-between p-2.5")}>
             <FeedbackIcon className="opacity-80"/>
             {collapsed ? null : (<span className="min-w-0">
                 <span className="block truncate text-sm font-medium text-foreground">
@@ -137,7 +136,7 @@ export function Sidebar() {
                   {t("nav.feedback.hint")}
                 </span>
               </span>)}
-          </a>
+          </button>
         </div>
       </nav>
       

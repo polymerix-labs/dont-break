@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { projectLabel, type SessionSnapshot } from "./session";
+import { humanName, projectLabel, type SessionSnapshot } from "./session";
 let failures = 0;
 function check(name: string, cond: boolean) {
     if (cond)
@@ -56,6 +56,9 @@ check("label never shows a workspace UUID", projectLabel(base({
     project_slug: "graphify",
 })) === "graphify");
 check("empty path with no project yields empty label", projectLabel(base()) === "");
+check("humanName drops workspace UUID", humanName("9bb95643-47ee-410b-bc3f-f442475ea281") === "");
+check("humanName drops project id", humanName("prj_11f75928-8c1b-4337-98d6-b0327b4b0ff1") === "");
+check("humanName keeps a slug", humanName("graphify") === "graphify");
 if (failures) {
     console.error(`${failures} session helper test(s) failed`);
     process.exit(1);

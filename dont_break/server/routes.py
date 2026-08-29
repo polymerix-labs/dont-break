@@ -22,13 +22,16 @@ from dont_break.server.routers import (
     auth,
     graph,
     hook,
+    incident_diff,
     lockdown,
     project,
     query,
     rules,
     session,
+    support,
     tools,
     viewer,
+    write_mode,
 )
 
 router = APIRouter()
@@ -43,4 +46,7 @@ router.include_router(assist.router)
 router.include_router(graph.router)
 router.include_router(hook.router)
 router.include_router(lockdown.router)
+router.include_router(write_mode.router)
+router.include_router(incident_diff.router)
 router.include_router(tools.router)
+router.include_router(support.router)

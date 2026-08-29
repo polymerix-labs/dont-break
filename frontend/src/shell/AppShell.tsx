@@ -30,6 +30,7 @@ import { useUiStore } from "./uiStore";
 import { useViewer } from "./ViewerContext";
 import { ViewerHost } from "./ViewerHost";
 import { Sidebar } from "./Sidebar";
+import { SupportDialog } from "./SupportDialog";
 import { WelcomeOverlay } from "./WelcomeOverlay";
 import { FactsExtractBadge } from "./FactsExtractBadge";
 import { LiveSyncIndicator } from "./LiveSyncIndicator";
@@ -169,5 +170,6 @@ export function AppShell() {
         </main>
       </div>
       <WelcomeOverlay />
+      <SupportDialog />
     </div>);
 }

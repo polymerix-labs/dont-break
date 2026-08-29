@@ -57,6 +57,24 @@ class GatewayHookJournal:
             "kind": kind,
             "rule_id": decision.matched.rule_id,
             "agent_session_id": decision.conversation_id,
+            "hook": {
+                "relative_path": decision.relative_path,
+                "tool_name": decision.tool_name,
+                "permission": decision.permission,
+                **{
+                    key: value
+                    for key, value in decision.extra.items()
+                    if key
+                    not in {
+                        "content",
+                        "old_string",
+                        "new_string",
+                        "task",
+                        "transcript_path",
+                        "user_email",
+                    }
+                },
+            },
         }
         await self._gateway().api_request(token, "POST", path, json_body=body)
 

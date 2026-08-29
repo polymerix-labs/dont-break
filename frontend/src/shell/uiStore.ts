@@ -40,6 +40,8 @@ type UiState = {
     setActiveOverlay: (overlayId: string | null) => void;
     pendingRulePreview: PendingRulePreview;
     setPendingRulePreview: (preview: PendingRulePreview) => void;
+    supportOpen: boolean;
+    setSupportOpen: (open: boolean) => void;
 };
 export const useUiStore = create<UiState>((set) => ({
     graphSelection: null,
@@ -50,4 +52,6 @@ export const useUiStore = create<UiState>((set) => ({
     setActiveOverlay: (activeOverlay) => set({ activeOverlay }),
     pendingRulePreview: null,
     setPendingRulePreview: (pendingRulePreview) => set({ pendingRulePreview }),
+    supportOpen: false,
+    setSupportOpen: (supportOpen) => set({ supportOpen }),
 }));

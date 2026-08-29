@@ -40,11 +40,16 @@ class LocalRoutes:
     AGENTS_HOOK_INSTALL = "/api/agents/hook/install"
     HOOK_DECISION = "/api/hook/decision"
     HOOK_SUBAGENT = "/api/hook/subagent"
+    HOOK_PERMIT = "/api/hook/permit"
     LOCKDOWN = "/api/lockdown"
     LOCKDOWN_RELEASE = "/api/lockdown/release"
     LOCKDOWN_POLICY = "/api/lockdown/policy"
+    WRITE_MODE = "/api/write-mode"
+    HOOK_OBSERVATIONS = "/api/hook/observations"
+    INCIDENT_DIFF = "/api/incident-diff"
     TOOLS_FACTS_EXTRACT = "/api/tools/facts-extract"
     TOOLS_FACTS_EXTRACT_UPDATE = "/api/tools/facts-extract/update"
+    SUPPORT = "/api/support"
 
 
 class ViewerProxyRoutes:

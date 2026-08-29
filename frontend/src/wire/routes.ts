@@ -36,8 +36,12 @@ export const LocalRoutes = {
     LOCKDOWN: "/api/lockdown",
     LOCKDOWN_RELEASE: "/api/lockdown/release",
     LOCKDOWN_POLICY: "/api/lockdown/policy",
+    WRITE_MODE: "/api/write-mode",
+    HOOK_OBSERVATIONS: "/api/hook/observations",
+    INCIDENT_DIFF: "/api/incident-diff",
     TOOLS_FACTS_EXTRACT: "/api/tools/facts-extract",
     TOOLS_FACTS_EXTRACT_UPDATE: "/api/tools/facts-extract/update",
+    SUPPORT: "/api/support",
 } as const;
 export const StorageKeys = {
     NEBULA_OPEN: "dont-break/nebula-open",

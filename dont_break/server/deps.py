@@ -21,7 +21,10 @@ from fastapi import Request
 from dont_break.application.auth_service import AuthService
 from dont_break.application.hook_decision import HookDecisionService
 from dont_break.application.hook_journal import GatewayHookJournal
+from dont_break.application.hook_observations import HookObservationStore
 from dont_break.application.lockdown import LockdownStore
+from dont_break.application.recent_checks import RecentCheckStore
+from dont_break.application.write_mode import WriteModeStore
 from dont_break.application.project_service import ProjectService
 from dont_break.application.protected_paths_cache import (
     GatewayProtectedPathsFetcher,
@@ -122,12 +125,20 @@ def wire_app_services(app) -> None:
         )
     if getattr(app.state, "lockdown", None) is None:
         app.state.lockdown = LockdownStore()
+    if getattr(app.state, "write_mode", None) is None:
+        app.state.write_mode = WriteModeStore()
+    if getattr(app.state, "recent_checks", None) is None:
+        app.state.recent_checks = RecentCheckStore()
+    if getattr(app.state, "hook_observations", None) is None:
+        app.state.hook_observations = HookObservationStore()
     if getattr(app.state, "hook_decision", None) is None:
         app.state.hook_decision = HookDecisionService(
             app.state.protected_paths_cache,
             app.state.folder_projects,
             enforce_blocks=True,
             locks=app.state.lockdown,
+            write_modes=app.state.write_mode,
+            recent_checks=app.state.recent_checks,
         )
     if getattr(app.state, "hook_journal", None) is None:
         app.state.hook_journal = GatewayHookJournal(

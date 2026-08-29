@@ -18,7 +18,13 @@ import type { SyncPhase as SyncPhaseType } from "../wire/sync";
 const OPAQUE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function isOpaqueId(value: string | undefined): boolean {
     const text = value?.trim() ?? "";
-    return text.length > 0 && OPAQUE_ID.test(text);
+    return text.length > 0 && (OPAQUE_ID.test(text) || text.startsWith("prj_"));
+}
+export function humanName(value: string | undefined, fallback = ""): string {
+    const text = value?.trim() ?? "";
+    if (!text || isOpaqueId(text))
+        return fallback;
+    return text;
 }
 export type SessionSnapshot = {
     authenticated: boolean;

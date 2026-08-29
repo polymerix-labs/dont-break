@@ -297,12 +297,96 @@ export async function fetchFactsExtractStatus(): Promise<FactsExtractStatus | nu
         return null;
     return parseJson<FactsExtractStatus>(res);
 }
+export type SupportContext = {
+    organization: string;
+    project: string;
+    app_version: string;
+    facts_extract: string;
+    npm: string;
+};
+export async function fetchSupportContext(): Promise<SupportContext | null> {
+    const res = await fetch(LocalRoutes.SUPPORT);
+    if (!res.ok)
+        return null;
+    return parseJson<SupportContext>(res);
+}
+export async function sendSupport(body: {
+    kind: "bug" | "idea" | "question";
+    email: string;
+    message: string;
+}): Promise<void> {
+    const res = await fetch(LocalRoutes.SUPPORT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    const payload = await parseJson<{
+        error?: string;
+    }>(res);
+    if (!res.ok)
+        throw new Error(payload.error || "Could not send that.");
+}
 export async function updateFactsExtract(): Promise<FactsExtractStatus> {
     const res = await fetch(LocalRoutes.TOOLS_FACTS_EXTRACT_UPDATE, { method: "POST" });
     const body = await parseJson<FactsExtractStatus>(res);
     if (!res.ok)
         throw new Error(body.error || "Could not update facts-extract.");
     return body;
+}
+export type WriteModeStatus = {
+    mode: "watch" | "hard";
+    folder: string;
+    hard: boolean;
+    covers_all_tools?: boolean;
+};
+export async function fetchWriteMode(): Promise<WriteModeStatus> {
+    const res = await fetch(LocalRoutes.WRITE_MODE);
+    if (!res.ok)
+        return { mode: "watch", folder: "", hard: false };
+    return parseJson<WriteModeStatus>(res);
+}
+export async function saveWriteMode(mode: "watch" | "hard"): Promise<WriteModeStatus> {
+    const res = await fetch(LocalRoutes.WRITE_MODE, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+    });
+    const body = await parseJson<WriteModeStatus & {
+        error?: string;
+    }>(res);
+    if (!res.ok)
+        throw new Error(body.error || "Could not save write mode.");
+    return body;
+}
+export type IncidentDiff = {
+    available: boolean;
+    reason: string;
+    diff: string;
+};
+export async function fetchIncidentDiff(files: string[]): Promise<IncidentDiff> {
+    const params = new URLSearchParams();
+    for (const file of files)
+        params.append("file", file);
+    const res = await fetch(`${LocalRoutes.INCIDENT_DIFF}?${params.toString()}`);
+    if (!res.ok)
+        return { available: false, reason: "failed", diff: "" };
+    return parseJson<IncidentDiff>(res);
+}
+export type HookObservation = {
+    at?: number;
+    model?: string;
+    tool_name?: string;
+    relative_path?: string;
+    permission?: string;
+};
+export async function fetchHookObservations(): Promise<HookObservation[]> {
+    const res = await fetch(LocalRoutes.HOOK_OBSERVATIONS);
+    if (!res.ok)
+        return [];
+    const body = await parseJson<{
+        observations?: HookObservation[];
+    }>(res);
+    return body.observations ?? [];
 }
 export async function setLiveSync(enabled: boolean): Promise<SessionSnapshot> {
     const res = await fetch(LocalRoutes.PROJECT_WATCH, {

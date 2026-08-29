@@ -16,8 +16,11 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Request
 
+from dont_break.application.recent_checks import LOCAL
 from dont_break.server.gateway_proxy import proxy_api_request
 from dont_break.server.routes_constants import QueryProxyRoutes
 
@@ -67,7 +70,42 @@ async def query_arch_status(request: Request):
 
 @router.get(QueryProxyRoutes.CHECK)
 async def query_check(request: Request):
-    return await proxy_api_request(request, "query", "GET", QueryProxyRoutes.CHECK_SUFFIX)
+    response = await proxy_api_request(request, "query", "GET", QueryProxyRoutes.CHECK_SUFFIX)
+    try:
+        _remember_proxy_check(request, response)
+    except Exception:
+        pass
+    return response
+
+
+def _remember_proxy_check(request: Request, response) -> None:
+    checks = getattr(request.app.state, "recent_checks", None)
+    if checks is None or getattr(response, "status_code", 500) >= 400:
+        return
+    raw = getattr(response, "body", b"") or b""
+    try:
+        body = json.loads(raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw)
+    except (ValueError, AttributeError, UnicodeDecodeError):
+        return
+    if not isinstance(body, dict):
+        return
+    files = body.get("files") or []
+    if files and isinstance(files[0], dict):
+        checks.ingest_file_verdicts(
+            files,
+            fallback_verdict=str(body.get("verdict") or "ok"),
+            source=LOCAL,
+            verdict_basis=str(body.get("verdict_basis") or ""),
+        )
+        return
+    seeds = [item for item in request.query_params.get("files", "").split(",") if item]
+    if seeds:
+        checks.remember_event_files(
+            seeds,
+            str(body.get("verdict") or "ok"),
+            source=LOCAL,
+            verdict_basis=str(body.get("verdict_basis") or ""),
+        )
 
 
 @router.post(QueryProxyRoutes.SIMULATE_RULE)

@@ -11,7 +11,7 @@
     "lint": "eslint public/nebula",
     "test:policy": "npx --yes tsx src/viewer/graphSessionPolicy.test.ts",
     "test:wire": "npx --yes tsx src/wire/hostProtocol.test.ts && npx --yes tsx src/wire/syncProgress.test.ts && node public/nebula/overlays.test.mjs && node public/nebula/wave.test.mjs && node public/nebula/colors.test.mjs && node public/nebula/moduleGraph.test.mjs && node public/nebula/panelData.test.mjs && node public/nebula/cfgCompact.test.mjs && node public/nebula/viewerNotice.test.mjs && node public/nebula/graphStreamReconnect.test.mjs && node public/nebula/statusLine.test.mjs",
-    "test:rules": "npx --yes tsx src/pages/rules/ruleForm.test.ts && npx --yes tsx src/pages/rules/ruleDisplay.test.ts && npx --yes tsx src/pages/rules/SentinelPanel.test.ts && npx --yes tsx src/pages/overviewActivity.test.ts",
+    "test:rules": "npx --yes tsx src/pages/rules/ruleForm.test.ts && npx --yes tsx src/pages/rules/ruleDisplay.test.ts && npx --yes tsx src/pages/rules/SentinelPanel.test.ts && npx --yes tsx src/pages/rules/incidentDetail.test.ts && npx --yes tsx src/pages/overviewActivity.test.ts",
     "test:overview": "npx --yes tsx src/pages/overviewActivity.test.ts",
     "test:events": "npx --yes tsx src/api/ruleEventsQuery.test.ts && npx --yes tsx src/api/dashboardCheck.test.ts",
     "test:assist": "npx --yes tsx src/api/assistProxy.test.ts",

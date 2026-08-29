@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Badge, Button, Card, cn, useToast } from "../../design";
 import { useT } from "../../i18n";
 import type { BypassIncident, Rule, RuleActivity, RuleStats, RuleTargets, } from "../../api/dashboard";
@@ -90,7 +90,7 @@ export function SentinelStrip({ totals }: {
     const integrity = integrityPct(totals);
     return (<Card data-sentinel-strip>
       <div className="flex divide-x divide-line">
-        <Counter label={t("metrics.checks")} value={String(totals.checks)} sub={t("metrics.filesChecked", { count: totals.files_checked })}/>
+        <Counter label={t("metrics.checks")} value={String(totals.checks)} sub={t(totals.files_checked === 1 ? "metrics.filesChecked.one" : "metrics.filesChecked", { count: totals.files_checked })}/>
         <Counter label={t("sentinel.bypasses")} value={String(totals.incidents)} tone={totals.incidents > 0 ? "danger" : undefined}/>
         <Counter label={t("sentinel.integrity")} value={`${integrity}%`} tone={integrity < 100 ? "danger" : "ok"}/>
       </div>
@@ -168,12 +168,15 @@ export function BypassAlert({ incidents, rules, }: {
               {incident.files.length > 3 ? `  ·  +${incident.files.length - 3}` : ""}
             </p>) : null}
         </div>
-        <div className="flex shrink-0 gap-1.5">
+        <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+          <Link to="/rules/incidents/$incidentId" params={{ incidentId: incident.id }} className="inline-flex h-8 items-center rounded-md bg-primary px-2.5 text-xs font-medium text-background">
+            {t("sentinel.seeDetail")}
+          </Link>
           <Button size="sm" variant="ghost" disabled={ack.isPending} onClick={() => void acknowledge()}>
             {t("sentinel.ack")}
           </Button>
-          <Button size="sm" variant="primary" onClick={coachAgent}>
-            {t("sentinel.fixAgent")}
+          <Button size="sm" variant="ghost" onClick={coachAgent}>
+            {t("sentinel.tightenRule")}
           </Button>
         </div>
       </div>
