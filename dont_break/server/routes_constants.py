@@ -43,6 +43,8 @@ class LocalRoutes:
     LOCKDOWN = "/api/lockdown"
     LOCKDOWN_RELEASE = "/api/lockdown/release"
     LOCKDOWN_POLICY = "/api/lockdown/policy"
+    TOOLS_FACTS_EXTRACT = "/api/tools/facts-extract"
+    TOOLS_FACTS_EXTRACT_UPDATE = "/api/tools/facts-extract/update"
 
 
 class ViewerProxyRoutes:

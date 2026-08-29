@@ -283,6 +283,27 @@ export type LockdownStatus = {
         ttl_sec: number;
     };
 };
+export type FactsExtractStatus = {
+    package: string;
+    installed: string | null;
+    latest: string | null;
+    update_available: boolean;
+    overridden: boolean;
+    error?: string;
+};
+export async function fetchFactsExtractStatus(): Promise<FactsExtractStatus | null> {
+    const res = await fetch(LocalRoutes.TOOLS_FACTS_EXTRACT);
+    if (!res.ok)
+        return null;
+    return parseJson<FactsExtractStatus>(res);
+}
+export async function updateFactsExtract(): Promise<FactsExtractStatus> {
+    const res = await fetch(LocalRoutes.TOOLS_FACTS_EXTRACT_UPDATE, { method: "POST" });
+    const body = await parseJson<FactsExtractStatus>(res);
+    if (!res.ok)
+        throw new Error(body.error || "Could not update facts-extract.");
+    return body;
+}
 export async function setLiveSync(enabled: boolean): Promise<SessionSnapshot> {
     const res = await fetch(LocalRoutes.PROJECT_WATCH, {
         method: "POST",

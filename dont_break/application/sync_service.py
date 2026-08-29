@@ -233,6 +233,49 @@ def _discover_source_files(repo_root: Path) -> list[str]:
     return found
 
 
+def _count_repo_files(repo_root: Path) -> int:
+    """Every ordinary file under the repo root, walker-excluded dirs aside —
+    the denominator `_sparse_discovery_warning` compares discovery against.
+    No content is read; this only counts, so it stays cheap even on a large
+    tree with nothing supported in it."""
+    total = 0
+    for dirpath, dirnames, filenames in os.walk(repo_root):
+        dirnames[:] = [name for name in dirnames if name not in _DISCOVER_EXCLUDED_DIRS]
+        total += len(filenames)
+    return total
+
+
+
+
+
+
+
+
+
+_SPARSE_DISCOVERY_MIN_REPO_FILES = 20
+_SPARSE_DISCOVERY_RATIO = 0.05
+
+
+def _sparse_discovery_warning(discovered: int, total_repo_files: int) -> str | None:
+    """None when discovery looks like it saw the real project; otherwise the
+    warning to show before syncing what is likely an unrepresentative sliver
+    of it. Pure and tested — the sync path only decides whether to print it.
+    """
+    if total_repo_files < _SPARSE_DISCOVERY_MIN_REPO_FILES:
+        return None
+    if discovered == 0:
+        return None
+    if discovered / total_repo_files >= _SPARSE_DISCOVERY_RATIO:
+        return None
+    return (
+        f"Only {discovered} of {total_repo_files} files in this repository matched a "
+        "supported language — the graph built from this sync will cover a small, "
+        "possibly unrepresentative slice of your project. If your main language isn't "
+        "Java, Kotlin, TypeScript, or JavaScript yet, this is expected: "
+        "https://dont-break.com/language-support"
+    )
+
+
 def _bundle_files_by_path(files: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     by_path: dict[str, dict[str, Any]] = {}
     for item in files:
@@ -403,6 +446,15 @@ class SyncService:
             err = ApiErrorMessage.SYNC_NO_FILES.value
             await self._store.mark_sync_result(saved=False, error=err)
             raise RuntimeError(err)
+
+
+
+
+
+        total_repo_files = await asyncio.to_thread(_count_repo_files, repo_root)
+        sparse_warning = _sparse_discovery_warning(len(rel_paths), total_repo_files)
+        if sparse_warning:
+            console.print(f"[yellow]{sparse_warning}[/yellow]")
 
         cache = self.open_cache(project_id)
         previous_fp = (

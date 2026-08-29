@@ -22,6 +22,7 @@ from rich.console import Console
 
 from dont_break.application import build_services
 from dont_break.config import Settings
+from dont_break.extract.facts_extract import maybe_upgrade_facts_extract
 from dont_break.credentials import load_credentials
 from dont_break.domain.errors import GatewayError, ProjectLimitError
 from dont_break.intro import play_intro
@@ -29,6 +30,13 @@ from dont_break.server.app import create_app
 from dont_break.wake_preflight import port_free, resolve_port_conflict
 
 console = Console()
+
+
+def _upgrade_facts_extract_quietly() -> None:
+    try:
+        maybe_upgrade_facts_extract()
+    except Exception:
+        return
 
 
 async def run_wake(
@@ -68,6 +76,7 @@ async def run_wake(
     server = uvicorn.Server(config)
     server_task = asyncio.create_task(server.serve())
     await asyncio.sleep(0.4)
+    asyncio.create_task(asyncio.to_thread(_upgrade_facts_extract_quietly))
 
     creds = load_credentials()
     restored_as = await auth.restore_saved_session_as(settings, creds)

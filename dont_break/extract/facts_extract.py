@@ -21,6 +21,8 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -51,13 +53,200 @@ def _install_roots() -> list[Path]:
     return roots
 
 
-def _local_binary() -> str | None:
-    for root in _install_roots():
-        for name in ("facts-extract", "facts-extract.cmd"):
-            path = root / "node_modules" / ".bin" / name
-            if path.is_file():
-                return str(path)
+def _binary_in(root: Path) -> Path | None:
+    for name in ("facts-extract", "facts-extract.cmd"):
+        path = root / "node_modules" / ".bin" / name
+        if path.is_file():
+            return path
     return None
+
+
+def _local_binary() -> str | None:
+    best: tuple[tuple[int, int, int], Path] | None = None
+    for root in _install_roots():
+        path = _binary_in(root)
+        if path is None:
+            continue
+        ver = _parse_semver(_installed_version_in(root) or "") or (0, 0, 0)
+        if best is None or ver >= best[0]:
+            best = (ver, path)
+    return str(best[1]) if best else None
+
+
+def _parse_semver(raw: str) -> tuple[int, int, int] | None:
+    text = raw.strip().lstrip("vV")
+    if not text:
+        return None
+    core = text.split("-", 1)[0].split("+", 1)[0]
+    parts = core.split(".")
+    if len(parts) < 2:
+        return None
+    try:
+        major = int(parts[0])
+        minor = int(parts[1])
+        patch = int(parts[2]) if len(parts) > 2 else 0
+    except ValueError:
+        return None
+    return (major, minor, patch)
+
+
+def _is_newer(latest: str, installed: str) -> bool:
+    a = _parse_semver(latest)
+    b = _parse_semver(installed)
+    if a is None or b is None:
+        return bool(latest) and latest != installed
+    return a > b
+
+
+def _floor_tuple() -> tuple[int, int, int]:
+    raw = FACTS_EXTRACT_VERSION.lstrip("^~>=< ")
+    return _parse_semver(raw) or (0, 16, 0)
+
+
+def _meets_floor(version: str) -> bool:
+    parsed = _parse_semver(version)
+    return parsed is not None and parsed >= _floor_tuple()
+
+
+def _installed_version_in(root: Path) -> str | None:
+    pkg = root / "node_modules" / FACTS_EXTRACT_PACKAGE / "package.json"
+    if not pkg.is_file():
+        return None
+    try:
+        data = json.loads(pkg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    version = data.get("version")
+    return version if isinstance(version, str) and version else None
+
+
+def installed_facts_extract_version() -> str | None:
+    versions = [_installed_version_in(root) for root in _install_roots()]
+    present = [v for v in versions if v]
+    if not present:
+        return None
+    return max(present, key=lambda v: _parse_semver(v) or (0, 0, 0))
+
+
+_LATEST_TTL_SEC = 600.0
+_latest_lock = threading.Lock()
+_cached_latest: str | None = None
+_cached_latest_at = 0.0
+_upgrade_lock = threading.Lock()
+_installed_for_latest: str | None = None
+
+
+def _npm_view_latest(*, timeout: float = 8.0) -> str | None:
+    npm = shutil.which("npm")
+    if not npm:
+        return None
+    try:
+        result = subprocess.run(
+            [npm, "view", FACTS_EXTRACT_PACKAGE, "version"],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    version = (result.stdout or "").strip().splitlines()[-1] if result.stdout else ""
+    return version or None
+
+
+def latest_facts_extract_version(*, refresh: bool = False) -> str | None:
+    global _cached_latest, _cached_latest_at
+    now = time.monotonic()
+    with _latest_lock:
+        if (
+            not refresh
+            and _cached_latest is not None
+            and (now - _cached_latest_at) < _LATEST_TTL_SEC
+        ):
+            return _cached_latest
+    fetched = _npm_view_latest()
+    if fetched is None:
+        with _latest_lock:
+            return _cached_latest
+    with _latest_lock:
+        _cached_latest = fetched
+        _cached_latest_at = time.monotonic()
+        return _cached_latest
+
+
+def _is_overridden() -> bool:
+    return bool(os.environ.get(EnvVar.POLYMERIX_FACTS_EXTRACT_EXECUTABLE.value, "").strip())
+
+
+def facts_extract_status(*, refresh_latest: bool = False) -> dict[str, Any]:
+    installed = installed_facts_extract_version()
+    overridden = _is_overridden()
+    latest = None if overridden else latest_facts_extract_version(refresh=refresh_latest)
+    update_available = bool(
+        not overridden
+        and latest
+        and _meets_floor(latest)
+        and (not installed or _is_newer(latest, installed))
+    )
+    return {
+        "package": FACTS_EXTRACT_PACKAGE,
+        "installed": installed,
+        "latest": latest,
+        "update_available": update_available,
+        "overridden": overridden,
+    }
+
+
+def _install_exact(root: Path, version: str, *, verbose: bool = False) -> None:
+    npm = shutil.which("npm")
+    if not npm:
+        raise ExtractError("npm is required to update facts-extract.")
+    if not verbose:
+        print(f"Updating {FACTS_EXTRACT_PACKAGE} to {version}…", flush=True)
+    spec = f"{FACTS_EXTRACT_PACKAGE}@{version}"
+    cmd = [npm, "install", spec, "--omit=dev", "--no-fund", "--no-audit"]
+    if verbose:
+        cmd.append("--loglevel=verbose")
+    result = subprocess.run(cmd, cwd=root, capture_output=not verbose, text=True)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise ExtractError(
+            f"npm install {spec} failed in {root}"
+            + (f": {detail[:500]}" if detail else "")
+        )
+
+
+def maybe_upgrade_facts_extract(*, force: bool = False, verbose: bool = False) -> dict[str, Any]:
+    """Install npm latest into ~/.config/dont-break/tools when it is newer.
+
+    Never rewrites a git checkout package.json. Failures keep the current
+    binary; callers that must not break extract should catch ExtractError.
+    """
+    global _installed_for_latest, _cached_latest, _cached_latest_at
+    if _is_overridden():
+        return facts_extract_status()
+    with _upgrade_lock:
+        status = facts_extract_status()
+        latest = status.get("latest")
+        if not status["update_available"] or not isinstance(latest, str):
+            return status
+        if not force and _installed_for_latest == latest:
+            return status
+        _install_exact(_tools_dir(), latest, verbose=verbose)
+        _installed_for_latest = latest
+        with _latest_lock:
+            _cached_latest = latest
+            _cached_latest_at = time.monotonic()
+        return facts_extract_status()
+
+
+def _try_upgrade_quietly(*, verbose: bool = False) -> None:
+    try:
+        maybe_upgrade_facts_extract(verbose=verbose)
+    except Exception:
+        return
 
 
 def _write_tools_package_json(root: Path) -> bool:
@@ -107,6 +296,7 @@ def ensure_facts_extract(*, verbose: bool = False) -> None:
     if os.environ.get(EnvVar.POLYMERIX_FACTS_EXTRACT_EXECUTABLE.value, "").strip():
         return
     if _local_binary():
+        _try_upgrade_quietly(verbose=verbose)
         return
 
     npm = shutil.which("npm")
@@ -120,15 +310,19 @@ def ensure_facts_extract(*, verbose: bool = False) -> None:
     for root in _install_roots():
         pin_changed = _write_tools_package_json(root)
         if not pin_changed and _local_binary():
+            _try_upgrade_quietly(verbose=verbose)
             return
         if (pin_changed or not (root / "node_modules").is_dir()) and npm:
             _npm_install(root, verbose=verbose)
             if _local_binary():
+                _try_upgrade_quietly(verbose=verbose)
                 return
         if _local_binary():
+            _try_upgrade_quietly(verbose=verbose)
             return
 
     if npx:
+        _try_upgrade_quietly(verbose=verbose)
         return
 
     raise ExtractError(

@@ -27,6 +27,7 @@ from dont_break.server.routers import (
     query,
     rules,
     session,
+    tools,
     viewer,
 )
 
@@ -42,3 +43,4 @@ router.include_router(assist.router)
 router.include_router(graph.router)
 router.include_router(hook.router)
 router.include_router(lockdown.router)
+router.include_router(tools.router)

@@ -36,6 +36,8 @@ export const LocalRoutes = {
     LOCKDOWN: "/api/lockdown",
     LOCKDOWN_RELEASE: "/api/lockdown/release",
     LOCKDOWN_POLICY: "/api/lockdown/policy",
+    TOOLS_FACTS_EXTRACT: "/api/tools/facts-extract",
+    TOOLS_FACTS_EXTRACT_UPDATE: "/api/tools/facts-extract/update",
 } as const;
 export const StorageKeys = {
     NEBULA_OPEN: "dont-break/nebula-open",

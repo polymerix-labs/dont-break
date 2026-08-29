@@ -31,6 +31,7 @@ import { useViewer } from "./ViewerContext";
 import { ViewerHost } from "./ViewerHost";
 import { Sidebar } from "./Sidebar";
 import { WelcomeOverlay } from "./WelcomeOverlay";
+import { FactsExtractBadge } from "./FactsExtractBadge";
 import { LiveSyncIndicator } from "./LiveSyncIndicator";
 export function useProjectPick() {
     const { refresh } = useSessionContext();
@@ -132,6 +133,7 @@ export function AppShell() {
         </span>
         <ProjectSwitcher />
         {ready ? <LiveSyncIndicator /> : null}
+        <FactsExtractBadge />
         {ready && onGraph ? (<>
             <ViewerToolbar iframeRef={iframeRef}/>
             {activeOverlay ? (<Button size="sm" variant="ghost" onClick={() => overlays.clear()}>
