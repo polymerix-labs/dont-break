@@ -109,7 +109,9 @@ def wire_app_services(app) -> None:
     app.state.session_store = get_session_store()
     app.state.gateway = GatewayClient(settings)
     app.state.watch_service = WatchService(
-        app.state.session_store, build_watch_sync_runner(app)
+        app.state.session_store,
+        build_watch_sync_runner(app),
+        list_files=FactsExtractRunner().list_files,
     )
     if getattr(app.state, "folder_projects", None) is None:
         app.state.folder_projects = FolderProjectStore()

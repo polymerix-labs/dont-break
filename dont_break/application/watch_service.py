@@ -26,8 +26,11 @@ delta sync at a time:
   the per-path hint is dropped and the sync's stat heuristic + delta threshold decide;
 - **backoff**: network failures retry exponentially, the pending batch is kept.
 
-The watcher filters events with the exact same rules as `_discover_source_files`, so it
-can never sync a file the manifest would not contain.
+The watcher admits a path when it is in the last ``facts-extract --list`` set (the
+same membership the sync manifest uses). A brand-new file that is not yet listed
+still goes through — otherwise a just-created source file would never wake anyone.
+When ``--list`` is unavailable the legacy Java/Kotlin/TS/JS suffix filter remains
+the fallback, so an old binary does not go mute.
 """
 
 from __future__ import annotations
@@ -58,6 +61,11 @@ SyncRunner = Callable[[Optional[Set[str]]], Awaitable[Any]]
 
 WatchFactory = Callable[[Path, "asyncio.Event"], AsyncIterator[Iterable[Any]]]
 
+ListFiles = Callable[[Path], Optional[list[str]]]
+
+
+_CHANGE_ADDED = 1
+
 
 def _default_watch_factory(repo_root: Path, stop_event: asyncio.Event):
     from watchfiles import awatch
@@ -70,12 +78,27 @@ def _default_watch_factory(repo_root: Path, stop_event: asyncio.Event):
     )
 
 
-def filter_changed_paths(repo_root: Path, changes: Iterable[Any]) -> set[str]:
+def _change_kind(item: Any) -> int | None:
+    if isinstance(item, tuple) and len(item) >= 2:
+        try:
+            return int(item[0])
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def filter_changed_paths(
+    repo_root: Path,
+    changes: Iterable[Any],
+    listed: set[str] | None = None,
+) -> set[str]:
     """Maps raw watch events to repo-relative source paths the sync pipeline cares about.
 
-    Accepts watchfiles tuples ``(Change, path)`` or bare path strings. Deletions pass
-    through on purpose: a deleted file must trigger a sync so the next manifest omits it
-    and the seal rebuilds the graph without its nodes.
+    Accepts watchfiles tuples ``(Change, path)`` or bare path strings. Deletions of a
+    listed path pass through so the next manifest omits them. When ``listed`` is a set
+    (from ``--list``), membership is the only language filter; a ``Change.added`` path
+    that is not yet listed is admitted so a new source file can join the next listing.
+    When ``listed`` is ``None``, the legacy suffix allowlist applies.
     """
     out: set[str] = set()
     root = repo_root.resolve()
@@ -87,9 +110,13 @@ def filter_changed_paths(repo_root: Path, changes: Iterable[Any]) -> set[str]:
             continue
         if any(part in _DISCOVER_EXCLUDED_DIRS for part in rel.parts):
             continue
-        if rel.suffix.lower() not in _DISCOVER_EXTENSIONS:
+        posix = rel.as_posix()
+        if listed is None:
+            if rel.suffix.lower() not in _DISCOVER_EXTENSIONS:
+                continue
+        elif posix not in listed and _change_kind(item) != _CHANGE_ADDED:
             continue
-        out.add(rel.as_posix())
+        out.add(posix)
     return out
 
 
@@ -102,6 +129,7 @@ class WatchService:
         sync_runner: SyncRunner,
         *,
         watch_factory: WatchFactory | None = None,
+        list_files: ListFiles | None = None,
         debounce_ms: float | None = None,
         min_interval_s: float | None = None,
         burst_hint_limit: int | None = None,
@@ -110,6 +138,8 @@ class WatchService:
     ) -> None:
         self._store = store
         self._sync_runner = sync_runner
+        self._list_files = list_files
+        self._listed: set[str] | None = None
         self._watch_factory = watch_factory or _default_watch_factory
         self._debounce_s = (
             debounce_ms if debounce_ms is not None else WatchTuning.DEBOUNCE_MS
@@ -146,9 +176,27 @@ class WatchService:
         self._dirty = asyncio.Event()
         self._pending = set()
         self._pending_full = False
+        await self._refresh_listed()
         self._task = asyncio.create_task(self._run())
         await self._store.set_watch_status(WatchStatus.WATCHING.value)
         logger.info("live sync watching %s", self.repo_root)
+
+    async def _refresh_listed(self) -> None:
+        """Replace the in-memory listing. Failures keep the last set so a flaky
+        ``--list`` cannot mute a watch that was already working."""
+        if self._list_files is None or self.repo_root is None:
+            return
+        try:
+            files = await asyncio.to_thread(self._list_files, self.repo_root)
+        except Exception:
+            logger.exception(
+                "facts-extract --list failed; live sync keeps the last listing"
+            )
+            return
+        if files is None:
+            self._listed = None
+            return
+        self._listed = set(files)
 
     async def stop(self) -> None:
         if self._stop_event is not None:
@@ -173,7 +221,9 @@ class WatchService:
         assert self.repo_root is not None and self._stop_event is not None
         try:
             async for changes in self._watch_factory(self.repo_root, self._stop_event):
-                filtered = filter_changed_paths(self.repo_root, changes)
+                filtered = filter_changed_paths(
+                    self.repo_root, changes, listed=self._listed
+                )
                 if not filtered:
                     continue
                 self._absorb(filtered)
@@ -249,6 +299,7 @@ class WatchService:
                 continue
             backoff = self._backoff_base_s
             self.sync_count += 1
+            await self._refresh_listed()
             await self._store.mark_watch_synced()
 
     async def _wait_dirty_or_stop(self) -> None:
