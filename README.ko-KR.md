@@ -8,6 +8,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/dont-break)](https://pypi.org/project/dont-break/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/dont-break?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/dont-break)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/polymerix-labs/dont-break/blob/main/LICENSE)
+[![Languages](https://img.shields.io/badge/43%20languages-full%20graph-2ea44f)](https://dont-break.com/language-support)
 [![Instagram](https://img.shields.io/badge/Instagram-dontbreak.dev-E4405F?logo=instagram&logoColor=white)](https://www.instagram.com/dontbreak.dev/)
 [![Reddit](https://img.shields.io/badge/Reddit-u%2Fdont--break-FF4500?logo=reddit&logoColor=white)](https://www.reddit.com/user/dont-break/)
 
@@ -36,6 +37,10 @@ AI 에이전트는 코드를 빠르게 배포합니다. 하지만 그와 함께 
 ```
 
 이 대화는 연결되는 즉시 자동으로 이루어집니다. 프롬프트 엔지니어링 없이: 에이전트 스킬이 이를 가르칩니다.
+
+## 언어와 능력
+
+dont-break가 지도화하는 언어와, 각 언어가 실제로 할 수 있는 것은 **[dont-break.com/language-support](https://dont-break.com/language-support)**에 있습니다.
 
 ## 설치
 

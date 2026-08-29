@@ -8,6 +8,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/dont-break)](https://pypi.org/project/dont-break/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/dont-break?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/dont-break)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/polymerix-labs/dont-break/blob/main/LICENSE)
+[![Languages](https://img.shields.io/badge/43%20languages-full%20graph-2ea44f)](https://dont-break.com/language-support)
 [![Instagram](https://img.shields.io/badge/Instagram-dontbreak.dev-E4405F?logo=instagram&logoColor=white)](https://www.instagram.com/dontbreak.dev/)
 [![Reddit](https://img.shields.io/badge/Reddit-u%2Fdont--break-FF4500?logo=reddit&logoColor=white)](https://www.reddit.com/user/dont-break/)
 
@@ -36,6 +37,10 @@ Agent :  « C'est plus risqué qu'il n'y paraît. Voici les 23 endroits qui cass
 ```
 
 Cette conversation se produit automatiquement une fois connecté. Aucun prompt engineering : le skill d'agent l'enseigne.
+
+## Langages et capacités
+
+Les langages que dont-break cartographie, et ce que chacun sait vraiment faire, sont sur **[dont-break.com/language-support](https://dont-break.com/language-support)**.
 
 ## Installation
 

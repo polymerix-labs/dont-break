@@ -8,6 +8,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/dont-break)](https://pypi.org/project/dont-break/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/dont-break?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/dont-break)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/polymerix-labs/dont-break/blob/main/LICENSE)
+[![Languages](https://img.shields.io/badge/43%20languages-full%20graph-2ea44f)](https://dont-break.com/language-support)
 [![Instagram](https://img.shields.io/badge/Instagram-dontbreak.dev-E4405F?logo=instagram&logoColor=white)](https://www.instagram.com/dontbreak.dev/)
 [![Reddit](https://img.shields.io/badge/Reddit-u%2Fdont--break-FF4500?logo=reddit&logoColor=white)](https://www.reddit.com/user/dont-break/)
 
@@ -36,6 +37,10 @@ Agent:   "Dit is risicovoller dan het lijkt. Hier zijn de 23 plekken die zullen 
 ```
 
 Dat gesprek gebeurt automatisch zodra je verbonden bent. Geen prompt engineering: de agent skill leert het.
+
+## Talen en mogelijkheden
+
+Welke talen dont-break in kaart brengt, en wat elke taal echt kan, staat op **[dont-break.com/language-support](https://dont-break.com/language-support)**.
 
 ## Installatie
 

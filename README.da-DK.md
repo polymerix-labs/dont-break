@@ -8,6 +8,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/dont-break)](https://pypi.org/project/dont-break/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/dont-break?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/dont-break)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/polymerix-labs/dont-break/blob/main/LICENSE)
+[![Languages](https://img.shields.io/badge/43%20languages-full%20graph-2ea44f)](https://dont-break.com/language-support)
 [![Instagram](https://img.shields.io/badge/Instagram-dontbreak.dev-E4405F?logo=instagram&logoColor=white)](https://www.instagram.com/dontbreak.dev/)
 [![Reddit](https://img.shields.io/badge/Reddit-u%2Fdont--break-FF4500?logo=reddit&logoColor=white)](https://www.reddit.com/user/dont-break/)
 
@@ -36,6 +37,10 @@ Agent:  "Dette er mere risikabelt, end det ser ud til. Her er de 23 steder, der 
 ```
 
 Den samtale sker automatisk, når du er forbundet. Ingen prompt engineering: agent-skillet lærer den det.
+
+## Sprog og evner
+
+Hvilke sprog dont-break kortlægger, og hvad hvert sprog faktisk kan, står på **[dont-break.com/language-support](https://dont-break.com/language-support)**.
 
 ## Installation
 
