@@ -22,7 +22,7 @@ import { Badge, Button, Card, EASE, LiveDot, Skeleton, cn } from "../../design";
 import { eventCheckBasis, integrityPct, mergeEventPages, rangeForPeriod, ruleEventsSearchParams, summarizeLockdowns, utcDayKey, type ListRuleEventsQuery, type RuleEvent, type RuleEventKind, type RuleEventListFilters, } from "../../api/ruleEventsQuery";
 import { useLockdownStatus } from "../../shell/LockdownBanner";
 import { remainingLabel } from "../../shell/lockdownCopy";
-import { storyTarget, storyWho } from "../overviewActivity";
+import { storyMessageKey, storyTarget, storyWho } from "../overviewActivity";
 import { formatRelative } from "./ruleDisplay";
 const EVENT_KINDS: RuleEventKind[] = [
     "checked",
@@ -209,16 +209,11 @@ export function JournalPanel({ days = 7 }: {
         const basisKey = basis === "no_rules" || basis === "structural"
             ? (`check.basis.${basis}` as MessageKey)
             : null;
-        const who = storyWho(event) || t("overview.anAgent");
+        const who = storyWho(event, t("overview.you"), t("overview.anAgent"));
         const target = basisKey
             ? t(basisKey)
             : storyTarget(event, ruleNames) || t("overview.theGraph");
-        const storyKey = event.kind === "checked" ||
-            event.kind === "warned" ||
-            event.kind === "block_advised" ||
-            event.kind === "block_forced"
-            ? (`overview.story.${event.kind}` as MessageKey)
-            : ("overview.story" as MessageKey);
+        const storyKey = storyMessageKey(event) as MessageKey;
         let sentence = t(storyKey, {
             who,
             kind: t(EVENT_KIND_KEY[event.kind]),

@@ -22,7 +22,7 @@ import { useT, useVoice, type MessageKey } from "../i18n";
 import { blockRespected, defaultEventRange, eventCheckBasis, type RuleEventKind, } from "../api/ruleEventsQuery";
 import { useLockdownStatus } from "../shell/LockdownBanner";
 import { formatInstant, pendingRules, ruleActivation } from "./rules/ruleDisplay";
-import { OVERVIEW_EMPTY, humanOverviewCtas, overviewPrimaryCta, proofRollup, recentJournalEvents, storyTarget, storyWho, trustDetailKey, trustHeadlineKey, trustTone, type TrustTone, } from "./overviewActivity";
+import { OVERVIEW_EMPTY, humanOverviewCtas, overviewPrimaryCta, proofRollup, recentJournalEvents, storyMessageKey, storyTarget, storyWho, trustDetailKey, trustHeadlineKey, trustTone, type TrustTone, } from "./overviewActivity";
 const VERDICT_KEYS: Record<string, MessageKey> = {
     healthy: "verdict.healthy",
     caution: "verdict.caution",
@@ -333,14 +333,9 @@ function ActivityFeed() {
                 const basisKey = basis === "no_rules" || basis === "structural"
                     ? (`check.basis.${basis}` as MessageKey)
                     : null;
-                const who = storyWho(event) || t("overview.anAgent");
+                const who = storyWho(event, t("overview.you"), t("overview.anAgent"));
                 const target = basisKey ? t(basisKey) : storyTarget(event, names) || t("overview.theGraph");
-                const storyKey = (event.kind === "checked" ||
-                    event.kind === "warned" ||
-                    event.kind === "block_advised" ||
-                    event.kind === "block_forced"
-                    ? (`overview.story.${event.kind}` as MessageKey)
-                    : "overview.story");
+                const storyKey = storyMessageKey(event) as MessageKey;
                 return (<motion.li key={event.id} initial={reduce ? false : { opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: index * 0.04, ease: EASE }} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", EVENT_DOT[event.kind] ?? "bg-faint")}/>

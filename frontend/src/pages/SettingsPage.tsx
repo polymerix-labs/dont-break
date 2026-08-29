@@ -15,8 +15,8 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { createProject, linkProject, listProjects, saveLockdownPolicy, syncProject, type LockdownStatus, type RegisteredProject, } from "../api/client";
+import { useEffect, useState, type ReactNode } from "react";
+import { createProject, fetchFactsExtractStatus, linkProject, listProjects, saveLockdownPolicy, syncProject, updateFactsExtract, type FactsExtractStatus, type LockdownStatus, type RegisteredProject, } from "../api/client";
 import { Button, Card, CardHeader, Reveal, useToast } from "../design";
 import { LockdownPolicySelects, useLockdownStatus } from "../shell/LockdownBanner";
 import { LOCALES, setLocale, setVoice, useLocale, useT, useVoice, type LocaleCode, type Voice, } from "../i18n";
@@ -44,19 +44,55 @@ function SettingsIllustration({ className }: {
       </g>
     </svg>);
 }
-function Row({ label, value, mono }: {
+function Row({ label, value, mono, action, }: {
     label: string;
     value: string;
     mono?: boolean;
+    action?: ReactNode;
 }) {
     return (<div className="flex items-center justify-between gap-4 px-4 py-2.5">
       <span className="shrink-0 text-xs text-muted">{label}</span>
-      <span className={mono
+      <span className="flex min-w-0 items-center gap-2">
+        <span className={mono
             ? "truncate font-mono text-xs text-foreground"
             : "truncate text-sm text-foreground"}>
-        {value || "--"}
+          {value || "--"}
+        </span>
+        {action}
       </span>
     </div>);
+}
+function FactsExtractSupportRow() {
+    const t = useT();
+    const toast = useToast();
+    const [status, setStatus] = useState<FactsExtractStatus | null>(null);
+    const [busy, setBusy] = useState(false);
+    useEffect(() => {
+        void fetchFactsExtractStatus().then(setStatus);
+    }, []);
+    const apply = async () => {
+        if (busy || status?.overridden)
+            return;
+        setBusy(true);
+        try {
+            const next = await updateFactsExtract();
+            setStatus(next);
+            toast({ title: t("header.extractUpdated"), tone: "ok" });
+        }
+        catch (err) {
+            toast({
+                title: t("header.extractUpdateFailed"),
+                detail: err instanceof Error ? err.message : undefined,
+                tone: "danger",
+            });
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    return (<Row label={t("settings.factsExtract")} value={status?.installed || "--"} mono action={status?.overridden ? null : (<Button size="sm" variant="secondary" disabled={busy} onClick={() => void apply()}>
+            {busy ? t("settings.factsExtractUpdating") : t("settings.factsExtractUpdate")}
+          </Button>)}/>);
 }
 function LanguageSelect() {
     const locale = useLocale();
@@ -303,12 +339,12 @@ export function SettingsPage() {
               {t("settings.supportHint")}
             </p>
             <div className="divide-y divide-line">
-              <Row label={t("settings.workspace")} value={session?.workspace_id ?? ""} mono/>
-              <Row label={t("settings.organization")} value={session?.org_slug ?? ""} mono/>
+              <Row label={t("settings.organization")} value={session?.org_name || session?.org_slug || ""}/>
+              <Row label={t("settings.workspace")} value={session?.project_display_name || ""}/>
               <Row label={t("settings.authenticated")} value={session?.authenticated ? t("common.yes") : t("common.no")}/>
-              <Row label={t("settings.slug")} value={session?.project_slug ?? ""} mono/>
-              <Row label={t("agents.project")} value={session?.project_id ?? ""} mono/>
               <Row label={t("settings.snapshotSaved")} value={session?.snapshot_saved ? t("common.yes") : t("common.no")}/>
+              <Row label={t("settings.appVersion")} value={session?.app_version || ""} mono/>
+              <FactsExtractSupportRow />
             </div>
           </Card>
         </details>

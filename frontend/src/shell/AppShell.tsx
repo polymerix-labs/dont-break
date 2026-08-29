@@ -18,7 +18,7 @@ import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import ViewerToolbar from "../ViewerToolbar";
 import { pickProject, syncProject } from "../api/client";
-import { projectLabel } from "../api/session";
+import { isOpaqueId, projectLabel } from "../api/session";
 import { Button, EmptyState, useToast } from "../design";
 import { useT } from "../i18n";
 import { ZonePreviewBanner } from "../pages/rules/ZonePreviewBanner";
@@ -141,8 +141,10 @@ export function AppShell() {
               </Button>) : null}
           </>) : (<div className="flex-1"/>)}
         
-        <a href="https://dont-break.com/account" target="_blank" rel="noreferrer" title={t("header.account")} aria-label={t("header.account")} className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line bg-primary-subtle font-display text-xs font-semibold uppercase text-primary transition-colors duration-fast hover:border-primary/50">
-          {(session?.org_slug || session?.workspace_id || "?").slice(0, 1)}
+        <a href={session?.account_url || "https://dont-break.com/app/account"} target="_blank" rel="noreferrer" title={t("header.account")} aria-label={t("header.account")} className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line bg-primary-subtle font-display text-xs font-semibold uppercase text-primary transition-colors duration-fast hover:border-primary/50">
+          {((!isOpaqueId(session?.org_slug) && session?.org_slug) ||
+            session?.project_slug ||
+            "?").slice(0, 1)}
         </a>
       </header>
 

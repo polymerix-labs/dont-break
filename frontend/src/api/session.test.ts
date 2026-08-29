@@ -42,11 +42,19 @@ function base(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
     };
 }
 check("label uses basename while folder is unlinked", projectLabel(base({ project_path: "/Users/me/code/pokedex" })) === "acme/pokedex");
-check("label prefers display name when linked", projectLabel(base({
-    project_path: "/Users/me/code/pokedex",
+check("label uses org slug and project slug", projectLabel(base({
+    org_slug: "daryl-2",
+    workspace_id: "9bb95643-47ee-410b-bc3f-f442475ea281",
+    project_path: "/Users/me/code/graphify",
     project_id: "prj_1",
-    project_display_name: "Pokedex App",
-})) === "acme/Pokedex App");
+    project_slug: "graphify",
+    project_display_name: "Graphify",
+})) === "daryl-2/graphify");
+check("label never shows a workspace UUID", projectLabel(base({
+    org_slug: "9bb95643-47ee-410b-bc3f-f442475ea281",
+    workspace_id: "9bb95643-47ee-410b-bc3f-f442475ea281",
+    project_slug: "graphify",
+})) === "graphify");
 check("empty path with no project yields empty label", projectLabel(base()) === "");
 if (failures) {
     console.error(`${failures} session helper test(s) failed`);

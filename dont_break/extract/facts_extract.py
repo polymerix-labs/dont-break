@@ -219,18 +219,21 @@ def _install_exact(root: Path, version: str, *, verbose: bool = False) -> None:
 
 
 def maybe_upgrade_facts_extract(*, force: bool = False, verbose: bool = False) -> dict[str, Any]:
-    """Install npm latest into ~/.config/dont-break/tools when it is newer.
+    """Install npm latest into ~/.config/dont-break/tools.
 
-    Never rewrites a git checkout package.json. Failures keep the current
-    binary; callers that must not break extract should catch ExtractError.
+    Without ``force``, only runs when npm is newer than the cached binary.
+    ``force=True`` reinstalls latest even when already current. Never rewrites
+    a git checkout package.json.
     """
     global _installed_for_latest, _cached_latest, _cached_latest_at
     if _is_overridden():
         return facts_extract_status()
     with _upgrade_lock:
-        status = facts_extract_status()
+        status = facts_extract_status(refresh_latest=force)
         latest = status.get("latest")
-        if not status["update_available"] or not isinstance(latest, str):
+        if not isinstance(latest, str) or not latest:
+            return status
+        if not force and not status["update_available"]:
             return status
         if not force and _installed_for_latest == latest:
             return status

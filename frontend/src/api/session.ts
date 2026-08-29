@@ -15,14 +15,23 @@
  */
 
 import type { SyncPhase as SyncPhaseType } from "../wire/sync";
+const OPAQUE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isOpaqueId(value: string | undefined): boolean {
+    const text = value?.trim() ?? "";
+    return text.length > 0 && OPAQUE_ID.test(text);
+}
 export type SessionSnapshot = {
     authenticated: boolean;
     org_slug: string;
+    org_name?: string;
     workspace_id: string;
     project_path: string;
     project_id: string;
     project_slug: string;
     project_display_name: string;
+    app_version?: string;
+    account_url?: string;
+    support_url?: string;
     snapshot_saved: boolean;
     graph_error: string;
     graph_stream_available: boolean;
@@ -40,14 +49,11 @@ export type SessionSnapshot = {
     last_synced_at?: number;
 };
 export function projectLabel(session: SessionSnapshot): string {
-    const ws = session.workspace_id || session.org_slug;
-    const project = session.project_display_name ||
-        session.project_slug ||
-        session.project_id ||
-        folderBasename(session.project_path);
+    const org = isOpaqueId(session.org_slug) ? "" : session.org_slug.trim();
+    const project = session.project_slug.trim() || folderBasename(session.project_path);
     if (!project)
         return "";
-    return ws ? `${ws}/${project}` : project;
+    return org ? `${org}/${project}` : project;
 }
 function folderBasename(path: string): string {
     const trimmed = path.trim().replace(/[/\\]+$/, "");

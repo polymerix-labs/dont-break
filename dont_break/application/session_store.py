@@ -20,10 +20,11 @@ import asyncio
 import time
 from typing import Any
 
-from dont_break.config import AUTH_CALLBACK_TIMEOUT_SEC
+from dont_break import __version__
+from dont_break.config import AUTH_CALLBACK_TIMEOUT_SEC, Settings
 from dont_break.credentials import StoredCredentials, load_credentials
 from dont_break.domain.errors import ApiErrorMessage
-from dont_break.domain.session import SessionSnapshot
+from dont_break.domain.session import SessionSnapshot, human_org_label, is_opaque_id
 from dont_break.domain.wire import (
     GraphDeltaOp,
     GraphStreamInboundType,
@@ -190,8 +191,9 @@ class SessionStore:
     async def complete_auth(self, org_slug: str) -> None:
         async with self._lock:
             self.authenticated = True
-            self.org_slug = org_slug.strip()
-            self.workspace_id = self.org_slug
+            slug = org_slug.strip()
+            self.org_slug = "" if is_opaque_id(slug) else slug
+            self.workspace_id = slug
             self.pending_auth_state = None
             self.auth_error = ""
             self._signal_auth_waiters()
@@ -214,14 +216,15 @@ class SessionStore:
     async def restore_auth(self, org_slug: str) -> None:
         async with self._lock:
             self.authenticated = True
-            self.org_slug = org_slug.strip()
-            self.workspace_id = self.org_slug
+            slug = org_slug.strip()
+            self.org_slug = "" if is_opaque_id(slug) else slug
+            self.workspace_id = slug
         await self._notify()
 
     async def set_workspace(self, workspace_id: str) -> None:
+        """Pin the API workspace id. Never overwrite the human org slug with it."""
         async with self._lock:
             self.workspace_id = workspace_id.strip()
-            self.org_slug = self.workspace_id
         await self._notify()
 
     async def set_project(
@@ -514,13 +517,17 @@ class SessionStore:
 
     def snapshot(self, creds: StoredCredentials | None = None) -> SessionSnapshot:
         creds = creds or load_credentials()
-        org_slug = self.org_slug or creds.org_slug
+        org_slug = human_org_label(self.org_slug, creds.org_slug)
         workspace_id = self.workspace_id or org_slug
         authenticated = self.authenticated or bool(creds.token)
         return SessionSnapshot(
             authenticated=authenticated,
             org_slug=org_slug,
+            org_name=org_slug,
             workspace_id=workspace_id,
+            app_version=__version__,
+            account_url=f"{Settings().app_url.rstrip('/')}/app/account",
+            support_url=f"{Settings().app_url.rstrip('/')}/app/overview?support=1",
             project_path=self.project_path,
             project_id=self.project_id,
             project_slug=self.project_slug,

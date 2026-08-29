@@ -18,6 +18,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../design";
 import { useT, type MessageKey } from "../i18n";
+import { useSessionContext } from "./SessionContext";
 const STORAGE_KEY = "dont-break.sidebar";
 function initialCollapsed(): boolean {
     try {
@@ -71,6 +72,10 @@ const TeamDashboardIcon = icon(<>
     <rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/>
     <path d="M5.5 14h5M8 11.5V14"/>
   </>);
+const FeedbackIcon = icon(<>
+    <path d="M2.5 3.5h11v7.5H8L5 13.5V11H2.5V3.5Z"/>
+    <path d="M5.5 7h5M5.5 9h3.5"/>
+  </>);
 const NAV: readonly {
     to: string;
     labelKey: MessageKey;
@@ -85,7 +90,9 @@ const NAV: readonly {
 export function Sidebar() {
     const pathname = useRouterState({ select: (s) => s.location.pathname });
     const [collapsed, setCollapsed] = useState(initialCollapsed);
+    const { session } = useSessionContext();
     const t = useT();
+    const supportHref = session?.support_url || "https://dont-break.com/app/overview?support=1";
     const onStudio = pathname.startsWith("/rules/studio");
     const beforeStudio = useRef<boolean | null>(null);
     useEffect(() => {
@@ -117,6 +124,21 @@ export function Sidebar() {
               {collapsed ? null : <span className="truncate">{t(item.labelKey)}</span>}
             </Link>);
         })}
+        <div className="mt-auto pt-2">
+          <a href={supportHref} target="_blank" rel="noreferrer" title={t("nav.feedback")} className={cn("flex rounded-lg border border-line bg-inset text-faint transition-colors duration-fast hover:border-line-strong hover:text-foreground", collapsed
+            ? "h-8 w-8 items-center justify-center"
+            : "min-h-[5.5rem] flex-col items-start justify-between p-2.5")}>
+            <FeedbackIcon className="opacity-80"/>
+            {collapsed ? null : (<span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-foreground">
+                  {t("nav.feedback")}
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-faint/80">
+                  {t("nav.feedback.hint")}
+                </span>
+              </span>)}
+          </a>
+        </div>
       </nav>
       
       <div className="border-t border-line p-2.5">

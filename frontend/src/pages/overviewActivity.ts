@@ -15,7 +15,7 @@
  */
 
 import type { Rule, RuleStats } from "../api/dashboard";
-import type { RuleDailyRollup, RuleEvent } from "../api/ruleEventsQuery";
+import type { RuleDailyRollup, RuleEvent, RuleEventKind } from "../api/ruleEventsQuery";
 import { blockRespected, integrityPct } from "../api/ruleEventsQuery";
 import { pendingRules } from "./rules/ruleDisplay";
 export const OVERVIEW_EMPTY = {
@@ -173,12 +173,39 @@ export function trustDetailKey(tone: TrustTone, counts: {
         return "overview.trust.watched.detail";
     return "overview.trust.quiet.detail";
 }
-export function storyWho(event: Pick<RuleEvent, "agent_label" | "user_id">): string {
+const STORY_KINDS: readonly RuleEventKind[] = [
+    "checked",
+    "warned",
+    "block_advised",
+    "block_forced",
+    "rule_proposed",
+    "rule_activated",
+    "rule_paused",
+    "rule_approved",
+    "lockdown_opened",
+    "lockdown_released",
+];
+export function isLocalUserStory(event: Pick<RuleEvent, "agent_label" | "user_id">): boolean {
+    return !event.agent_label?.trim() && Boolean(event.user_id?.trim());
+}
+export function storyWho(event: Pick<RuleEvent, "agent_label" | "user_id">, you = "", fallback = ""): string {
     const label = event.agent_label?.trim();
     if (label)
         return label;
-    const user = event.user_id?.trim();
-    return user || "";
+    if (event.user_id?.trim())
+        return you;
+    return fallback;
+}
+export function storyMessageKey(event: Pick<RuleEvent, "kind" | "agent_label" | "user_id">): `overview.story.${RuleEventKind}` | `overview.story.you.${RuleEventKind}` | "overview.story" | "overview.story.you" {
+    const you = isLocalUserStory(event);
+    const known = (STORY_KINDS as readonly string[]).includes(event.kind);
+    if (you && known)
+        return `overview.story.you.${event.kind}`;
+    if (you)
+        return "overview.story.you";
+    if (known)
+        return `overview.story.${event.kind}`;
+    return "overview.story";
 }
 export function storyTarget(event: Pick<RuleEvent, "rule_id">, names: Map<string, string>): string {
     if (!event.rule_id || event.rule_id === "structural")

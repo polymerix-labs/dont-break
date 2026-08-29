@@ -15,7 +15,7 @@
  */
 
 import type { Rule, RuleStats } from "../api/dashboard";
-import { OVERVIEW_EMPTY, compactRollup, humanOverviewCtas, overviewPrimaryCta, proofRollup, recentJournalEvents, ruleActivitySummary, rulesByRecentActivity, statsIndex, storyTarget, storyWho, trustDetailKey, trustHeadlineKey, trustTone, } from "./overviewActivity";
+import { OVERVIEW_EMPTY, compactRollup, humanOverviewCtas, overviewPrimaryCta, proofRollup, recentJournalEvents, ruleActivitySummary, rulesByRecentActivity, statsIndex, storyTarget, storyMessageKey, storyWho, trustDetailKey, trustHeadlineKey, trustTone, } from "./overviewActivity";
 let failures = 0;
 function check(name: string, cond: boolean) {
     if (cond) {
@@ -161,8 +161,13 @@ const stats: RuleStats[] = [
         "overview.trust.broken.detail.many");
 }
 {
-    check("story who prefers the agent label", storyWho({ agent_label: "Claude", user_id: "u1" }) === "Claude");
-    check("story who falls back to user", storyWho({ agent_label: null, user_id: "u1" }) === "u1");
+    check("story who prefers the agent label", storyWho({ agent_label: "Claude", user_id: "u1" }, "You") === "Claude");
+    check("story who names the local user as you", storyWho({ agent_label: null, user_id: "u1" }, "You", "An agent") === "You");
+    check("story who falls back when nobody is named", storyWho({ agent_label: null, user_id: "" }, "You", "An agent") === "An agent");
+    check("user approval is a first-person sentence", storyMessageKey({ kind: "rule_approved", agent_label: null, user_id: "u1" }) ===
+        "overview.story.you.rule_approved");
+    check("agent check stays third person", storyMessageKey({ kind: "checked", agent_label: "Claude", user_id: "u1" }) ===
+        "overview.story.checked");
     check("story target uses the rule name", storyTarget({ rule_id: "r1" }, new Map([["r1", "Auth"]])) === "Auth");
     check("structural target is blank", storyTarget({ rule_id: "structural" }, new Map()) === "");
 }

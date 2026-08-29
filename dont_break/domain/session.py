@@ -16,13 +16,35 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
+
+
+_OPAQUE_ID = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def is_opaque_id(value: str) -> bool:
+    """True for a UUID — never show this as an organisation or project label."""
+    return bool(value) and _OPAQUE_ID.fullmatch(value.strip()) is not None
+
+
+def human_org_label(*candidates: str) -> str:
+    """First value that is a real slug/name, not a workspace UUID."""
+    for raw in candidates:
+        value = raw.strip()
+        if value and not is_opaque_id(value):
+            return value
+    return ""
 
 
 @dataclass(frozen=True)
 class SessionSnapshot:
     authenticated: bool
     org_slug: str
+    org_name: str
     workspace_id: str
     project_path: str
     project_id: str
@@ -43,6 +65,9 @@ class SessionSnapshot:
     watch_status: str = ""
     watch_error: str = ""
     last_synced_at: float = 0.0
+    app_version: str = ""
+    account_url: str = ""
+    support_url: str = ""
 
     def to_json(self) -> dict[str, object]:
         return asdict(self)
