@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "extract güncelleniyor…",
     "header.extractUpdated": "Extract güncellendi",
     "header.extractUpdateFailed": "extract güncellenemedi",
+    "header.appUpdate": "{latest} güncelle",
+    "header.appUpdateTitle": "dont-break {latest} çıktı (kurulu {installed})",
     "prompt.signInTitle": "Oturum açmanız gerekiyor",
     "prompt.signInDetail": "Oturum açmak için terminalde dont-break --wake çalıştırın, sonra bu sayfayı yeniden yükleyin.",
     "prompt.chooseTitle": "Proje klasörünüzü seçin",

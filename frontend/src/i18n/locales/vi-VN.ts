@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Đang cập nhật extract…",
     "header.extractUpdated": "Đã cập nhật Extract",
     "header.extractUpdateFailed": "Không cập nhật được extract",
+    "header.appUpdate": "Cập nhật {latest}",
+    "header.appUpdateTitle": "dont-break {latest} đã ra (đã cài {installed})",
     "prompt.signInTitle": "Cần đăng nhập",
     "prompt.signInDetail": "Chạy dont-break --wake trong terminal để đăng nhập, sau đó tải lại trang này.",
     "prompt.chooseTitle": "Chọn thư mục dự án của bạn",

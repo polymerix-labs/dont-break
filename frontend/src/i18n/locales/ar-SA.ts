@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "جارٍ تحديث extract…",
     "header.extractUpdated": "تم تحديث Extract",
     "header.extractUpdateFailed": "تعذّر تحديث extract",
+    "header.appUpdate": "تحديث {latest}",
+    "header.appUpdateTitle": "dont-break {latest} متاح (المثبّت {installed})",
     "prompt.signInTitle": "تسجيل الدخول مطلوب",
     "prompt.signInDetail": "شغّل dont-break --wake في الطرفية لتسجيل الدخول، ثم أعد تحميل هذه الصفحة.",
     "prompt.chooseTitle": "اختر مجلد مشروعك",

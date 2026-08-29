@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Aktualizuji extract…",
     "header.extractUpdated": "Extract aktualizován",
     "header.extractUpdateFailed": "Extract se nepodařilo aktualizovat",
+    "header.appUpdate": "Aktualizovat {latest}",
+    "header.appUpdateTitle": "dont-break {latest} je venku (nainstalovaný {installed})",
     "prompt.signInTitle": "Vyžadováno přihlášení",
     "prompt.signInDetail": "Spusťte dont-break --wake v terminálu, přihlaste se a poté tuto stránku znovu načtěte.",
     "prompt.chooseTitle": "Vyberte složku svého projektu",

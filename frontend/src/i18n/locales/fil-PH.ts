@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Ina-update ang extract…",
     "header.extractUpdated": "Na-update ang Extract",
     "header.extractUpdateFailed": "Hindi ma-update ang extract",
+    "header.appUpdate": "I-update ang {latest}",
+    "header.appUpdateTitle": "Available na ang dont-break {latest} (naka-install {installed})",
     "prompt.signInTitle": "Kailangang mag-sign in",
     "prompt.signInDetail": "Patakbuhin ang dont-break --wake sa terminal para mag-sign in, pagkatapos ay i-reload ang pahinang ito.",
     "prompt.chooseTitle": "Piliin ang folder ng iyong proyekto",

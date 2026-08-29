@@ -49,6 +49,7 @@ class LocalRoutes:
     INCIDENT_DIFF = "/api/incident-diff"
     TOOLS_FACTS_EXTRACT = "/api/tools/facts-extract"
     TOOLS_FACTS_EXTRACT_UPDATE = "/api/tools/facts-extract/update"
+    APP_UPDATE = "/api/app/update"
     SUPPORT = "/api/support"
 
 

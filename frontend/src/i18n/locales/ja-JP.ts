@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "extract を更新中…",
     "header.extractUpdated": "Extract を更新しました",
     "header.extractUpdateFailed": "extract を更新できませんでした",
+    "header.appUpdate": "{latest} に更新",
+    "header.appUpdateTitle": "dont-break {latest} が公開されました（インストール済み {installed}）",
     "prompt.signInTitle": "サインインが必要です",
     "prompt.signInDetail": "ターミナルで dont-break --wake を実行してサインインし、このページを再読み込みしてください。",
     "prompt.chooseTitle": "プロジェクトフォルダを選択してください",

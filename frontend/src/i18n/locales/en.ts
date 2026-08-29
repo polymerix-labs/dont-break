@@ -59,6 +59,8 @@ export const en = {
     "header.extractUpdating": "Updating extract…",
     "header.extractUpdated": "Extract updated",
     "header.extractUpdateFailed": "Could not update extract",
+    "header.appUpdate": "Update {latest}",
+    "header.appUpdateTitle": "dont-break {latest} is out (you have {installed})",
     "prompt.signInTitle": "Sign in required",
     "prompt.signInDetail": "Run dont-break --wake in your terminal, then reload this page to see your code as a graph.",
     "prompt.chooseTitle": "Choose your project folder",

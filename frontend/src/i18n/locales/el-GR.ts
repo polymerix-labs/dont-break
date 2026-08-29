@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Ενημέρωση extract…",
     "header.extractUpdated": "Το Extract ενημερώθηκε",
     "header.extractUpdateFailed": "Αδυναμία ενημέρωσης extract",
+    "header.appUpdate": "Ενημέρωση {latest}",
+    "header.appUpdateTitle": "Το dont-break {latest} κυκλοφόρησε (εγκατεστημένο {installed})",
     "prompt.signInTitle": "Απαιτείται σύνδεση",
     "prompt.signInDetail": "Εκτελέστε dont-break --wake στο τερματικό για να συνδεθείτε και μετά φορτώστε ξανά τη σελίδα.",
     "prompt.chooseTitle": "Επιλέξτε τον φάκελο του έργου σας",

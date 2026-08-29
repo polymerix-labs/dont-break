@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Päivitetään extract…",
     "header.extractUpdated": "Extract päivitetty",
     "header.extractUpdateFailed": "extractia ei voitu päivittää",
+    "header.appUpdate": "Päivitä {latest}",
+    "header.appUpdateTitle": "dont-break {latest} on julkaistu (asennettu {installed})",
     "prompt.signInTitle": "Kirjautuminen vaaditaan",
     "prompt.signInDetail": "Suorita dont-break --wake terminaalissa kirjautuaksesi ja lataa sitten tämä sivu uudelleen.",
     "prompt.chooseTitle": "Valitse projektisi kansio",

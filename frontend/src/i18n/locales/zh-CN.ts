@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "正在更新 extract…",
     "header.extractUpdated": "Extract 已更新",
     "header.extractUpdateFailed": "无法更新 extract",
+    "header.appUpdate": "更新 {latest}",
+    "header.appUpdateTitle": "dont-break {latest} 已发布（当前 {installed}）",
     "prompt.signInTitle": "需要登录",
     "prompt.signInDetail": "在终端运行 dont-break --wake 登录，然后重新加载此页面。",
     "prompt.chooseTitle": "选择你的项目文件夹",

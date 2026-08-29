@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "מעדכן extract…",
     "header.extractUpdated": "Extract עודכן",
     "header.extractUpdateFailed": "לא ניתן לעדכן extract",
+    "header.appUpdate": "עדכן {latest}",
+    "header.appUpdateTitle": "dont-break {latest} כבר זמין (מותקן {installed})",
     "prompt.signInTitle": "נדרשת התחברות",
     "prompt.signInDetail": "הריצו dont-break --wake בטרמינל כדי להתחבר, ואז טענו מחדש את הדף.",
     "prompt.chooseTitle": "בחרו את תיקיית הפרויקט שלכם",

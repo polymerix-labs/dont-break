@@ -297,6 +297,18 @@ export async function fetchFactsExtractStatus(): Promise<FactsExtractStatus | nu
         return null;
     return parseJson<FactsExtractStatus>(res);
 }
+export type AppReleaseStatus = {
+    installed: string;
+    latest: string | null;
+    update_available: boolean;
+    release_url: string | null;
+};
+export async function fetchAppReleaseStatus(): Promise<AppReleaseStatus | null> {
+    const res = await fetch(LocalRoutes.APP_UPDATE);
+    if (!res.ok)
+        return null;
+    return parseJson<AppReleaseStatus>(res);
+}
 export type SupportContext = {
     organization: string;
     project: string;

@@ -32,6 +32,7 @@ import { ViewerHost } from "./ViewerHost";
 import { Sidebar } from "./Sidebar";
 import { SupportDialog } from "./SupportDialog";
 import { WelcomeOverlay } from "./WelcomeOverlay";
+import { AppUpdateBadge } from "./AppUpdateBadge";
 import { FactsExtractBadge } from "./FactsExtractBadge";
 import { LiveSyncIndicator } from "./LiveSyncIndicator";
 export function useProjectPick() {
@@ -141,12 +142,15 @@ export function AppShell() {
                 {t("header.clearOverlay")}
               </Button>) : null}
           </>) : (<div className="flex-1"/>)}
-        
-        <a href={session?.account_url || "https://dont-break.com/app/account"} target="_blank" rel="noreferrer" title={t("header.account")} aria-label={t("header.account")} className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line bg-primary-subtle font-display text-xs font-semibold uppercase text-primary transition-colors duration-fast hover:border-primary/50">
-          {((!isOpaqueId(session?.org_slug) && session?.org_slug) ||
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <AppUpdateBadge />
+          
+          <a href={session?.account_url || "https://dont-break.com/app/account"} target="_blank" rel="noreferrer" title={t("header.account")} aria-label={t("header.account")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line bg-primary-subtle font-display text-xs font-semibold uppercase text-primary transition-colors duration-fast hover:border-primary/50">
+            {((!isOpaqueId(session?.org_slug) && session?.org_slug) ||
             session?.project_slug ||
             "?").slice(0, 1)}
-        </a>
+          </a>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1">

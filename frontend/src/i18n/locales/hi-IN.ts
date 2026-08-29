@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "extract अपडेट हो रहा है…",
     "header.extractUpdated": "Extract अपडेट हो गया",
     "header.extractUpdateFailed": "extract अपडेट नहीं हो सका",
+    "header.appUpdate": "{latest} अपडेट करें",
+    "header.appUpdateTitle": "dont-break {latest} आ गया है (इंस्टॉल {installed})",
     "prompt.signInTitle": "साइन इन आवश्यक है",
     "prompt.signInDetail": "साइन इन करने के लिए अपने टर्मिनल में dont-break --wake चलाएँ, फिर यह पेज दोबारा लोड करें।",
     "prompt.chooseTitle": "अपना प्रोजेक्ट फ़ोल्डर चुनें",

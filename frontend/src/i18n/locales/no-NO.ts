@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Oppdaterer extract…",
     "header.extractUpdated": "Extract oppdatert",
     "header.extractUpdateFailed": "Kunne ikke oppdatere extract",
+    "header.appUpdate": "Oppdater {latest}",
+    "header.appUpdateTitle": "dont-break {latest} er ute (installert {installed})",
     "prompt.signInTitle": "Innlogging kreves",
     "prompt.signInDetail": "Kjør dont-break --wake i terminalen for å logge inn, og last deretter siden på nytt.",
     "prompt.chooseTitle": "Velg prosjektmappen din",

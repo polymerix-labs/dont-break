@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "extract yangilanmoqda…",
     "header.extractUpdated": "Extract yangilandi",
     "header.extractUpdateFailed": "extract ni yangilab bo‘lmadi",
+    "header.appUpdate": "{latest} ni yangilash",
+    "header.appUpdateTitle": "dont-break {latest} chiqdi (o‘rnatilgan {installed})",
     "prompt.signInTitle": "Kirish talab qilinadi",
     "prompt.signInDetail": "Kirish uchun terminalda dont-break --wake buyrugʻini bajaring, soʻng bu sahifani qayta yuklang.",
     "prompt.chooseTitle": "Loyihangiz papkasini tanlang",

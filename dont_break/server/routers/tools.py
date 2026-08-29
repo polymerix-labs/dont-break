@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Local facts-extract version status and opt-in npm update."""
+"""Local facts-extract version status, opt-in npm update, and app release check."""
 
 from __future__ import annotations
 
@@ -21,11 +21,18 @@ import asyncio
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from dont_break.application.app_release import app_release_status
 from dont_break.domain.errors import ExtractError
 from dont_break.extract.facts_extract import facts_extract_status, maybe_upgrade_facts_extract
 from dont_break.server.routes_constants import LocalRoutes
 
 router = APIRouter()
+
+
+@router.get(LocalRoutes.APP_UPDATE)
+async def app_update_status() -> JSONResponse:
+    """Latest GitHub release vs the running dont-break version."""
+    return JSONResponse(await asyncio.to_thread(app_release_status))
 
 
 @router.get(LocalRoutes.TOOLS_FACTS_EXTRACT)

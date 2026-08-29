@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "กำลังอัปเดต extract…",
     "header.extractUpdated": "อัปเดต Extract แล้ว",
     "header.extractUpdateFailed": "อัปเดต extract ไม่ได้",
+    "header.appUpdate": "อัปเดต {latest}",
+    "header.appUpdateTitle": "dont-break {latest} ออกแล้ว (ติดตั้งแล้ว {installed})",
     "prompt.signInTitle": "ต้องเข้าสู่ระบบ",
     "prompt.signInDetail": "รัน dont-break --wake ในเทอร์มินัลเพื่อเข้าสู่ระบบ แล้วโหลดหน้านี้ใหม่",
     "prompt.chooseTitle": "เลือกโฟลเดอร์โปรเจกต์ของคุณ",

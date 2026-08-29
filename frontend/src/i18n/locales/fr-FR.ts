@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Mise à jour d'extract…",
     "header.extractUpdated": "Extract mis à jour",
     "header.extractUpdateFailed": "Impossible de mettre à jour extract",
+    "header.appUpdate": "Mettre à jour {latest}",
+    "header.appUpdateTitle": "dont-break {latest} est disponible (installé {installed})",
     "prompt.signInTitle": "Connexion requise",
     "prompt.signInDetail": "Lancez dont-break --wake dans votre terminal pour vous connecter, puis rechargez cette page.",
     "prompt.chooseTitle": "Choisissez le dossier de votre projet",

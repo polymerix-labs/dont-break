@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Memperbarui extract…",
     "header.extractUpdated": "Extract diperbarui",
     "header.extractUpdateFailed": "Tidak dapat memperbarui extract",
+    "header.appUpdate": "Perbarui {latest}",
+    "header.appUpdateTitle": "dont-break {latest} sudah ada (terpasang {installed})",
     "prompt.signInTitle": "Perlu masuk",
     "prompt.signInDetail": "Jalankan dont-break --wake di terminal untuk masuk, lalu muat ulang halaman ini.",
     "prompt.chooseTitle": "Pilih folder proyek Anda",

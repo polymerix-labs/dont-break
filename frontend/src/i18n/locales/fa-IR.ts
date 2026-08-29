@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "در حال به‌روزرسانی extract…",
     "header.extractUpdated": "Extract به‌روز شد",
     "header.extractUpdateFailed": "نتوانست extract را به‌روز کند",
+    "header.appUpdate": "به‌روزرسانی {latest}",
+    "header.appUpdateTitle": "dont-break {latest} منتشر شده (نصب‌شده {installed})",
     "prompt.signInTitle": "ورود لازم است",
     "prompt.signInDetail": "برای ورود، dont-break --wake را در ترمینال اجرا کنید و سپس این صفحه را دوباره بارگذاری کنید.",
     "prompt.chooseTitle": "پوشه پروژه خود را انتخاب کنید",

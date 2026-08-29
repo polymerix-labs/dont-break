@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Aktualizowanie extract…",
     "header.extractUpdated": "Extract zaktualizowany",
     "header.extractUpdateFailed": "Nie udało się zaktualizować extract",
+    "header.appUpdate": "Zaktualizuj {latest}",
+    "header.appUpdateTitle": "dont-break {latest} jest dostępny (zainstalowany {installed})",
     "prompt.signInTitle": "Wymagane logowanie",
     "prompt.signInDetail": "Uruchom dont-break --wake w terminalu, aby się zalogować, a następnie odśwież tę stronę.",
     "prompt.chooseTitle": "Wybierz folder swojego projektu",

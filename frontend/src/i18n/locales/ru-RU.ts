@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Обновление extract…",
     "header.extractUpdated": "Extract обновлён",
     "header.extractUpdateFailed": "Не удалось обновить extract",
+    "header.appUpdate": "Обновить {latest}",
+    "header.appUpdateTitle": "dont-break {latest} уже вышел (установлен {installed})",
     "prompt.signInTitle": "Требуется вход",
     "prompt.signInDetail": "Выполните dont-break --wake в терминале, чтобы войти, затем перезагрузите эту страницу.",
     "prompt.chooseTitle": "Выберите папку вашего проекта",

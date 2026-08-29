@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "Se actualizează extract…",
     "header.extractUpdated": "Extract actualizat",
     "header.extractUpdateFailed": "Nu s-a putut actualiza extract",
+    "header.appUpdate": "Actualizează {latest}",
+    "header.appUpdateTitle": "dont-break {latest} este disponibil (instalat {installed})",
     "prompt.signInTitle": "Autentificare necesară",
     "prompt.signInDetail": "Rulează dont-break --wake în terminal pentru a te autentifica, apoi reîncarcă această pagină.",
     "prompt.chooseTitle": "Alege folderul proiectului tău",

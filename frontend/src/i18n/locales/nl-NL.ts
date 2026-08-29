@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "extract wordt bijgewerkt…",
     "header.extractUpdated": "Extract bijgewerkt",
     "header.extractUpdateFailed": "extract kon niet worden bijgewerkt",
+    "header.appUpdate": "{latest} bijwerken",
+    "header.appUpdateTitle": "dont-break {latest} is uit (geïnstalleerd {installed})",
     "prompt.signInTitle": "Aanmelden vereist",
     "prompt.signInDetail": "Voer dont-break --wake uit in je terminal om aan te melden en herlaad deze pagina.",
     "prompt.chooseTitle": "Kies je projectmap",

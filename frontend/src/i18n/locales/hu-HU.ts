@@ -54,6 +54,8 @@ const messages: Messages = {
     "header.extractUpdating": "extract frissítése…",
     "header.extractUpdated": "Extract frissítve",
     "header.extractUpdateFailed": "Az extract frissítése nem sikerült",
+    "header.appUpdate": "{latest} frissítése",
+    "header.appUpdateTitle": "dont-break {latest} megjelent (telepítve {installed})",
     "prompt.signInTitle": "Bejelentkezés szükséges",
     "prompt.signInDetail": "Futtassa a dont-break --wake parancsot a terminálban a bejelentkezéshez, majd töltse újra az oldalt.",
     "prompt.chooseTitle": "Válassza ki a projektmappáját",
