@@ -14,14 +14,20 @@
 
 from __future__ import annotations
 
+import json
 import os
+import sys
+import uuid
 from enum import Enum
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-CLIENT_VERSION = "0.3.0"
+from dont_break import __version__
+
+CLIENT_VERSION = __version__
 CLIENT_NAME = "dont-break"
+INSTALL_ID_FILENAME = "install.json"
 AUTH_CALLBACK_TIMEOUT_SEC = 300.0
 CONFIG_DIR_NAME = "dont-break"
 CREDENTIALS_FILENAME = "credentials.json"
@@ -51,6 +57,54 @@ def config_dir() -> Path:
 
 def credentials_path() -> Path:
     return config_dir() / CREDENTIALS_FILENAME
+
+
+_cached_install_id: str | None = None
+
+
+def client_os() -> str:
+    """Coarse platform token for `X-Polymerix-Os`. Never a hostname."""
+    plat = sys.platform
+    if plat.startswith("darwin"):
+        return "darwin"
+    if plat.startswith("linux"):
+        return "linux"
+    if plat.startswith("win"):
+        return "win32"
+    return "unknown"
+
+
+def install_id() -> str:
+    """Stable id for this desktop install, persisted under config_dir().
+
+    Derived once from a local file — no analytics token lives here.
+    """
+    global _cached_install_id
+    if _cached_install_id:
+        return _cached_install_id
+    path = config_dir() / INSTALL_ID_FILENAME
+    try:
+        if path.is_file():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            value = str(data.get("install_id") or "").strip()
+            if value:
+                _cached_install_id = value
+                return value
+    except (OSError, ValueError, TypeError):
+        pass
+    value = uuid.uuid4().hex
+    try:
+        path.write_text(json.dumps({"install_id": value}) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+    _cached_install_id = value
+    return value
+
+
+def reset_install_id_cache() -> None:
+    """Test-only: drop the process cache so a new config_dir is re-read."""
+    global _cached_install_id
+    _cached_install_id = None
 
 
 def _optional_user_env_files() -> tuple[str, ...]:

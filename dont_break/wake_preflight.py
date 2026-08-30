@@ -131,22 +131,54 @@ def stop_process(pid: int, *, wait_seconds: float = 3.0) -> bool:
 
 
 def port_free(host: str, port: int) -> bool:
+    """True only if a new uvicorn can bind ``(host, port)``.
+
+    A TCP connect is the wrong probe. TIME_WAIT and a listener that is no
+    longer accepting look free to ``connect_ex``, then uvicorn raises
+    ``SystemExit`` from its own startup task and the user sees a stack
+    trace instead of a choice. Probe the same way uvicorn binds: IPv4
+    (or IPv6 if ``host`` is an address with colons) and ``SO_REUSEADDR``.
+    """
     import socket
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.settimeout(0.3)
-        return sock.connect_ex((host, port)) != 0
+    bind_host = host.strip("[]")
+    family = socket.AF_INET6 if ":" in bind_host else socket.AF_INET
+    sock = socket.socket(family, socket.SOCK_STREAM)
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if family == socket.AF_INET6:
+            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+        sock.bind((bind_host, port))
+        return True
+    except OSError:
+        return False
+    finally:
+        sock.close()
 
 
 async def resolve_port_conflict(
     console: Console, host: str, port: int
 ) -> tuple[str, int]:
-    """Runs when `check_port` found something on (host, port). Returns
-    `("reuse", port)` if the caller should skip starting a server and just
-    open the browser to the existing instance, or `("start", port)` — a
-    possibly different port — if the caller should proceed to bind and
-    serve normally."""
+    """Ask what to do when ``(host, port)`` cannot be bound.
+
+    Returns ``("reuse", port)`` to open the existing instance, or
+    ``("start", port)`` — possibly a different port — to bind and serve.
+    """
     status = await check_port(host, port)
+
+    if status == PortStatus.FREE:
+
+        pid = find_listening_pid(port)
+        console.print(
+            f"[yellow]Port {port} on {host} is taken but is not answering "
+            f"as dont-break.[/yellow]"
+        )
+        if pid is not None:
+            console.print(f"[dim]Process {pid} is listening. Stop it, or pick another port.[/dim]")
+        new_port = IntPrompt.ask(
+            "Port to use instead", default=port + 1, console=console
+        )
+        return "start", new_port
 
     if status == PortStatus.OURS:
         console.print(

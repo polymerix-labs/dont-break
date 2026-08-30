@@ -68,6 +68,18 @@ def main() -> None:
             )
         except KeyboardInterrupt:
             sys.exit(0)
+        except SystemExit as exc:
+
+
+
+            code = exc.code if isinstance(exc.code, int) else 1
+            if code:
+                print(
+                    "dont-break: that port is already in use. "
+                    "If another dont-break is open, use that window or stop it with Ctrl+C.",
+                    file=sys.stderr,
+                )
+            sys.exit(code or 1)
         except RuntimeError as exc:
             print(f"dont-break: {exc}", file=sys.stderr)
             sys.exit(1)

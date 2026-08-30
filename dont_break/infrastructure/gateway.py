@@ -23,7 +23,7 @@ from typing import Any, AsyncIterator
 
 import httpx
 
-from dont_break.config import CLIENT_NAME, CLIENT_VERSION, Settings
+from dont_break.config import CLIENT_NAME, CLIENT_VERSION, Settings, client_os, install_id
 from dont_break.domain.errors import (
     GATEWAY_UNREACHABLE_HINT,
     ApiErrorMessage,
@@ -67,6 +67,7 @@ class GatewayClient:
         )
 
     def _headers(self, token: str, extra: dict[str, str] | None = None) -> dict[str, str]:
+        """Auth plus desktop wake hints (version, os, install-id). No analytics token."""
 
 
 
@@ -77,6 +78,8 @@ class GatewayClient:
             GatewayHeaders.ACCEPT: GatewayHeaders.JSON_ACCEPT,
             GatewayHeaders.CLIENT: CLIENT_NAME,
             GatewayHeaders.EXTENSION_VERSION: CLIENT_VERSION,
+            GatewayHeaders.INSTALL_ID: install_id(),
+            GatewayHeaders.OS: client_os(),
         }
         if extra:
             headers.update(extra)

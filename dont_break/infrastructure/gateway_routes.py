@@ -124,6 +124,8 @@ class GatewayHeaders:
     CONTENT_TYPE = "Content-Type"
     CLIENT = "X-Polymerix-Client"
     EXTENSION_VERSION = "X-Polymerix-Extension-Version"
+    INSTALL_ID = "X-Polymerix-Install-Id"
+    OS = "X-Polymerix-Os"
     IDEMPOTENCY_KEY = "Idempotency-Key"
     SSE_ACCEPT = "text/event-stream"
     JSON_ACCEPT = "application/json"

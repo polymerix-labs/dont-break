@@ -19,7 +19,7 @@ build-backend = "hatchling.build"
 [project]
 name = "dont-break"
 dynamic = ["version"]
-description = "The trust layer for AI-written code: say what must never break, prove the protection holds, enforce it on every agent edit."
+description = "The trust layer for AI coding agents: say what must never break, prove it holds, enforce it on every agent edit."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
@@ -126,37 +126,7 @@ only-include = [
   "frontend/postcss.config.js",
   "frontend/eslint.config.mjs",
   "README.md",
-  "README.fr.md",
-  "README.ar-SA.md",
-  "README.cs-CZ.md",
-  "README.da-DK.md",
-  "README.de-DE.md",
-  "README.el-GR.md",
-  "README.es-ES.md",
-  "README.fa-IR.md",
-  "README.fi-FI.md",
-  "README.fil-PH.md",
-  "README.he-IL.md",
-  "README.hi-IN.md",
-  "README.hu-HU.md",
-  "README.id-ID.md",
-  "README.it-IT.md",
-  "README.ja-JP.md",
-  "README.ko-KR.md",
-  "README.nl-NL.md",
-  "README.no-NO.md",
-  "README.pl-PL.md",
-  "README.pt-BR.md",
-  "README.ro-RO.md",
-  "README.ru-RU.md",
-  "README.sv-SE.md",
-  "README.th-TH.md",
-  "README.tr-TR.md",
-  "README.uk-UA.md",
-  "README.uz-UZ.md",
-  "README.vi-VN.md",
-  "README.zh-CN.md",
-  "README.zh-TW.md",
+  "docs/i18n",
   "LICENSE",
   "NOTICE",
   "pyproject.toml",

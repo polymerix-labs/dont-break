@@ -2,7 +2,9 @@
 
 ![dont-break](https://raw.githubusercontent.com/polymerix-labs/dont-break/main/docs/assets/logo.gif)
 
-**The trust layer for AI-written code.**
+**The trust layer for AI coding agents.**
+
+Say what must never break. Prove it holds. Enforce it on every agent edit.
 
 [![PyPI](https://img.shields.io/pypi/v/dont-break)](https://pypi.org/project/dont-break/)
 [![Python](https://img.shields.io/pypi/pyversions/dont-break)](https://pypi.org/project/dont-break/)
@@ -14,7 +16,7 @@
 
 📬 Feature requests, bugs, questions, or feedback: **[daryl@dont-break.com](mailto:daryl@dont-break.com)**
 
-**🇬🇧 English** · [🇫🇷 Français](https://github.com/polymerix-labs/dont-break/blob/main/README.fr.md) · [🇸🇦 العربية](https://github.com/polymerix-labs/dont-break/blob/main/README.ar-SA.md) · [🇨🇿 Čeština](https://github.com/polymerix-labs/dont-break/blob/main/README.cs-CZ.md) · [🇩🇰 Dansk](https://github.com/polymerix-labs/dont-break/blob/main/README.da-DK.md) · [🇩🇪 Deutsch](https://github.com/polymerix-labs/dont-break/blob/main/README.de-DE.md) · [🇬🇷 Ελληνικά](https://github.com/polymerix-labs/dont-break/blob/main/README.el-GR.md) · [🇪🇸 Español](https://github.com/polymerix-labs/dont-break/blob/main/README.es-ES.md) · [🇮🇷 فارسی](https://github.com/polymerix-labs/dont-break/blob/main/README.fa-IR.md) · [🇫🇮 Suomi](https://github.com/polymerix-labs/dont-break/blob/main/README.fi-FI.md) · [🇵🇭 Filipino](https://github.com/polymerix-labs/dont-break/blob/main/README.fil-PH.md) · [🇮🇱 עברית](https://github.com/polymerix-labs/dont-break/blob/main/README.he-IL.md) · [🇮🇳 हिन्दी](https://github.com/polymerix-labs/dont-break/blob/main/README.hi-IN.md) · [🇭🇺 Magyar](https://github.com/polymerix-labs/dont-break/blob/main/README.hu-HU.md) · [🇮🇩 Bahasa Indonesia](https://github.com/polymerix-labs/dont-break/blob/main/README.id-ID.md) · [🇮🇹 Italiano](https://github.com/polymerix-labs/dont-break/blob/main/README.it-IT.md) · [🇯🇵 日本語](https://github.com/polymerix-labs/dont-break/blob/main/README.ja-JP.md) · [🇰🇷 한국어](https://github.com/polymerix-labs/dont-break/blob/main/README.ko-KR.md) · [🇳🇱 Nederlands](https://github.com/polymerix-labs/dont-break/blob/main/README.nl-NL.md) · [🇳🇴 Norsk](https://github.com/polymerix-labs/dont-break/blob/main/README.no-NO.md) · [🇵🇱 Polski](https://github.com/polymerix-labs/dont-break/blob/main/README.pl-PL.md) · [🇧🇷 Português (Brasil)](https://github.com/polymerix-labs/dont-break/blob/main/README.pt-BR.md) · [🇷🇴 Română](https://github.com/polymerix-labs/dont-break/blob/main/README.ro-RO.md) · [🇷🇺 Русский](https://github.com/polymerix-labs/dont-break/blob/main/README.ru-RU.md) · [🇸🇪 Svenska](https://github.com/polymerix-labs/dont-break/blob/main/README.sv-SE.md) · [🇹🇭 ไทย](https://github.com/polymerix-labs/dont-break/blob/main/README.th-TH.md) · [🇹🇷 Türkçe](https://github.com/polymerix-labs/dont-break/blob/main/README.tr-TR.md) · [🇺🇦 Українська](https://github.com/polymerix-labs/dont-break/blob/main/README.uk-UA.md) · [🇺🇿 Oʻzbekcha](https://github.com/polymerix-labs/dont-break/blob/main/README.uz-UZ.md) · [🇻🇳 Tiếng Việt](https://github.com/polymerix-labs/dont-break/blob/main/README.vi-VN.md) · [🇨🇳 简体中文](https://github.com/polymerix-labs/dont-break/blob/main/README.zh-CN.md) · [🇹🇼 繁體中文](https://github.com/polymerix-labs/dont-break/blob/main/README.zh-TW.md)
+**🇬🇧 English** · [🇫🇷 Français](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.fr.md) · [🇸🇦 العربية](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.ar-SA.md) · [🇨🇿 Čeština](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.cs-CZ.md) · [🇩🇰 Dansk](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.da-DK.md) · [🇩🇪 Deutsch](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.de-DE.md) · [🇬🇷 Ελληνικά](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.el-GR.md) · [🇪🇸 Español](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.es-ES.md) · [🇮🇷 فارسی](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.fa-IR.md) · [🇫🇮 Suomi](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.fi-FI.md) · [🇵🇭 Filipino](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.fil-PH.md) · [🇮🇱 עברית](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.he-IL.md) · [🇮🇳 हिन्दी](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.hi-IN.md) · [🇭🇺 Magyar](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.hu-HU.md) · [🇮🇩 Bahasa Indonesia](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.id-ID.md) · [🇮🇹 Italiano](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.it-IT.md) · [🇯🇵 日本語](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.ja-JP.md) · [🇰🇷 한국어](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.ko-KR.md) · [🇳🇱 Nederlands](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.nl-NL.md) · [🇳🇴 Norsk](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.no-NO.md) · [🇵🇱 Polski](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.pl-PL.md) · [🇧🇷 Português (Brasil)](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.pt-BR.md) · [🇷🇴 Română](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.ro-RO.md) · [🇷🇺 Русский](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.ru-RU.md) · [🇸🇪 Svenska](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.sv-SE.md) · [🇹🇭 ไทย](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.th-TH.md) · [🇹🇷 Türkçe](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.tr-TR.md) · [🇺🇦 Українська](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.uk-UA.md) · [🇺🇿 Oʻzbekcha](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.uz-UZ.md) · [🇻🇳 Tiếng Việt](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.vi-VN.md) · [🇨🇳 简体中文](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.zh-CN.md) · [🇹🇼 繁體中文](https://github.com/polymerix-labs/dont-break/blob/main/docs/i18n/README.zh-TW.md)
 
 </div>
 
@@ -22,12 +24,31 @@
 
 AI agents ship code fast. Nobody ships trust with it. Every team running Cursor, Claude, or CI bots has the same unspoken fear: the day a quick fix silently breaks the one thing that was never supposed to break.
 
-`dont-break` turns that fear into a contract:
+`dont-break` turns that fear into a contract, in four steps:
 
 1. **Say it in plain words.** "Nobody should be able to break invoice calculation, even indirectly." No file paths, no code.
-2. **Watch it get found.** dont-break reads the live map of your codebase and lights up every place that carries that logic, including the paths you forgot existed.
+2. **Watch it get found.** dont-break reads the live map of your codebase and lights up every place that carries that logic — including the paths you forgot existed.
 3. **Watch it get attacked.** It writes a protection rule, then replays code changes against it to prove the protection actually holds. A dry run: nothing in your code is touched.
-4. **Activate it.** From then on, every agent edit is checked against the rule before it lands. Your agent gets told "this is riskier than it looks" instead of you finding out in prod.
+4. **Activate it.** From then on, **every agent edit is checked against the rule before it lands** — in the editor, in CI, on the dashboard.
+
+## 30 seconds of quickstart
+
+Requires **Python 3.9+** and **Node.js** (npm). The graph extractor installs itself on first run.
+
+```bash
+pip install dont-break
+dont-break --wake
+```
+
+That opens a local UI on `http://127.0.0.1:4040`, in your language (32 available). Sign in, pick a project folder, and the map of your code builds itself: a live 3D graph of every module, call, and dependency, with your protected zones lit up on top of it.
+
+## What "enforce it on every agent edit" actually means
+
+Most guardrails are prompts, and prompts get ignored. dont-break sits **outside** the model:
+
+- **In the conversation.** Connected over MCP, your agent calls `check_change` before editing and `get_impact` before refactoring. It gets told "this is riskier than it looks — 23 call sites break" *before* writing, not after.
+- **At the write itself.** An editor hook intercepts every file write an agent attempts. The write is compared against your active rules — no prompt engineering, no cooperation required from the model.
+- **At the merge.** The same verdicts run in CI and fail the pipeline when a change reaches a protected zone. What your editor tolerated, the default branch still refuses.
 
 ```text
 You:    "Rename PokemonService.fetchAll"
@@ -40,20 +61,24 @@ Agent:  "This is riskier than it looks. Here are the 23 places that break,
 
 That conversation happens automatically once connected. No prompt engineering: the agent skill teaches it.
 
-## Languages and capabilities
+### Two enforcement modes
 
-The languages dont-break maps, and what each one can actually do, live on **[dont-break.com/language-support](https://dont-break.com/language-support)**.
+You pick the strength per folder, in one click:
 
-## Install
+| | **Watch mode** (default) | **Hard mode** |
+|---|---|---|
+| What happens on a risky agent write | The write lands; the verdict (ok / warn / block) is reported to the agent and to your dashboard as an incident | The write is **refused** until a `check_change` has passed for that file |
+| Philosophy | Observe first: see what your agents would have broken, build trust in the rules | Enforce: a protected file cannot be touched unchecked, period |
+| If dont-break is offline | Fail-open — your agent keeps working, nothing blocks | Fail-closed on protected writes — "hard" is not a lie |
+| Best for | First weeks, exploring, low-stakes repos | Payment flows, auth, schemas, anything with an on-call rotation |
 
-Requires **Python 3.9+** and **Node.js** (npm). The graph extractor installs itself on first run.
+Start in Watch, read a week of incidents, then flip the folders that matter to Hard.
 
-```bash
-pip install dont-break
-dont-break --wake
-```
+### Rules with a spine
 
-That opens a local UI on `http://127.0.0.1:4040`, in your language (32 available). Sign in, pick a project folder, and the map of your code builds itself: a live 3D graph of every module, call, and dependency, with your protected zones lit up on top of it.
+- A rule is written in plain language, compiled against the real dependency graph, and **tested by attack before activation** — you see it catch a breaking change before you trust it.
+- Agents can *propose* rules and add reasons, but they can never activate a block, pause someone else's rule, or rewrite history. Humans approve; the audit trail is append-only.
+- Every verdict comes with a **witness path**: the exact chain of dependencies through which your edit reaches the protected zone. No "the linter said no" — you see *why*.
 
 ## Pick your fight
 
@@ -111,6 +136,10 @@ Keyboard-first: `cmd+K` opens the command palette.
 2. Sign in, link the folder to a project, click **Connect Cursor**: one click mints a project-scoped token and fills `mcp.json`.
 3. Paste into Cursor (or your MCP client).
 4. Click **Install agent skill**: it writes the safe-change protocol into your repo's `AGENTS.md` so agents use the tools without being told.
+
+## Languages and capabilities
+
+The languages dont-break maps, and what each one can actually do, live on **[dont-break.com/language-support](https://dont-break.com/language-support)**.
 
 ## License
 
