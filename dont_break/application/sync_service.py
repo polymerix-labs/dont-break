@@ -1229,7 +1229,7 @@ class SyncService:
         extracted: dict[int, dict[str, Any]] = {}
         if pending_indices:
             console.print(
-                f"[dim]CAS sync: extracting {len(pending_indices)} changed file(s)…[/dim]"
+                f"[dim]Updating {len(pending_indices)} changed file(s)…[/dim]"
             )
             await self._store.set_sync_progress(
                 10, f"{SyncProgressLabel.EXTRACTING.value} ({len(pending_indices)})"
@@ -1267,7 +1267,7 @@ class SyncService:
                     f"{SyncProgressLabel.UPLOADING_PARTS.value} ({chunk_no}/{total_chunks})",
                 )
         else:
-            console.print("[dim]CAS sync: repository unchanged — nothing to upload.[/dim]")
+            console.print("[dim]Nothing changed since last sync — nothing to upload.[/dim]")
 
         await self._store.set_sync_progress(80, SyncProgressLabel.UPLOAD_COMPLETE.value)
 
@@ -1311,10 +1311,10 @@ class SyncService:
                 cache.save()
             except OSError as exc:
                 console.print(
-                    f"[yellow]Sync cache write failed ({exc}); next sync stays CAS.[/yellow]"
+                    f"[yellow]Sync cache write failed ({exc}); the next sync may take longer.[/yellow]"
                 )
         await self._store.mark_sync_result(saved=True)
-        console.print("[green]CAS sync complete — snapshot ready.[/green]")
+        console.print("[green]Sync complete — snapshot ready.[/green]")
         return {
             "saved": True,
             "kind": SyncResultKind.SYNC_CAS.value,

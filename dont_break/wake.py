@@ -72,6 +72,11 @@ async def run_wake(
             webbrowser.open(app_url)
             return
 
+
+
+
+    settings.use_port(port)
+
     config = uvicorn.Config(create_app(), host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
     server_task = asyncio.create_task(server.serve())

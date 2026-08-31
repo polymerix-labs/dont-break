@@ -160,3 +160,13 @@ class Settings(BaseSettings):
         if env:
             return int(env)
         return self.dont_break_port
+
+    def use_port(self, port: int) -> None:
+        """Bind later auth callbacks to the port we actually started on.
+
+        Preflight can pick 4041 when 4040 is taken. ``port`` still reads
+        ``DONT_BREAK_PORT`` first, so both the field and the env must move
+        or the browser comes back to the old address.
+        """
+        self.dont_break_port = port
+        os.environ[EnvVar.DONT_BREAK_PORT.value] = str(port)

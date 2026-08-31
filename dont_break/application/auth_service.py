@@ -22,6 +22,7 @@ from dont_break.application.session_store import SessionStore
 from dont_break.auth.callback import parse_callback_query
 from dont_break.domain.errors import AuthError
 from dont_break.auth.connect import build_connect_url, new_auth_state
+from dont_break.auth.detect_ide import detect_running_ide
 from dont_break.config import AUTH_CALLBACK_TIMEOUT_SEC, Settings
 from dont_break.infrastructure.credentials import CredentialStore, StoredCredentials, is_valid_access_token
 from dont_break.infrastructure.gateway import GatewayClient
@@ -85,7 +86,7 @@ class AuthService:
     async def begin_browser_sign_in(self, settings: Settings) -> str:
         state = new_auth_state()
         await self._store.set_pending_auth(state)
-        return build_connect_url(state, settings)
+        return build_connect_url(state, settings, ide=detect_running_ide())
 
     async def wait_for_callback(self, timeout_sec: float = AUTH_CALLBACK_TIMEOUT_SEC) -> None:
         await self._store.wait_for_auth(timeout_sec)
