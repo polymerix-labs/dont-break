@@ -121,13 +121,20 @@ class GatewayClient:
         return await self._get_json(token, GatewayRoutes.ME_CONTEXT)
 
     async def create_project(
-        self, token: str, workspace_id: str, display_name: str
+        self,
+        token: str,
+        workspace_id: str,
+        display_name: str,
+        *,
+        remote_url: str = "",
     ) -> dict[str, Any]:
-        return await self._post_json(
-            token,
-            GatewayRoutes.PROJECTS,
-            {"workspace_id": workspace_id, "display_name": display_name},
-        )
+        body: dict[str, Any] = {
+            "workspace_id": workspace_id,
+            "display_name": display_name,
+        }
+        if remote_url.strip():
+            body["remote_url"] = remote_url.strip()
+        return await self._post_json(token, GatewayRoutes.PROJECTS, body)
 
     async def create_api_token(
         self,

@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-FACTS_EXTRACT_VERSION = "^0.16.0"
+FACTS_EXTRACT_VERSION = "^0.17.1"
 FACTS_EXTRACT_PACKAGE = "@polymerix-labs/facts-extract"
 TOOLS_PACKAGE_NAME = "dont-break-tools"
 TEMP_DIR_PREFIX = "dont-break-"

@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import logging
-
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -31,6 +31,8 @@ from dont_break.config import Settings
 from dont_break.credentials import load_credentials
 from dont_break.domain.errors import GatewayError, ProjectLimitError
 from dont_break.infrastructure.gateway import GatewayClient
+from dont_break.git.context import collect_git_context
+from dont_break.git.identity import origin_needs_reattach, parse_git_remote_url
 from dont_break.project.picker import PickerError
 from dont_break.project.slug import project_slug_from_path
 from dont_break.server.routes_constants import LocalRoutes
@@ -54,6 +56,53 @@ def _project_row_id(item: dict[str, Any]) -> str:
     return str(item.get("id") or item.get("project_id") or "").strip()
 
 
+def _row_display_name(item: dict[str, Any], fallback: str) -> str:
+    return str(
+        item.get("displayName") or item.get("display_name") or fallback
+    ).strip() or fallback
+
+
+def _row_git_url_key(item: dict[str, Any]) -> str:
+    return str(item.get("gitUrlKey") or item.get("git_url_key") or "").strip()
+
+
+def _folder_origin(project_path: str) -> tuple[str, str, str]:
+    """Return `(remote_url, url_key, owner/repo)` from `origin`, or empty strings."""
+    try:
+        ctx = collect_git_context(Path(project_path))
+    except RuntimeError:
+        return "", "", ""
+    remote = (ctx.remote_url or "").strip()
+    if not remote:
+        return "", "", ""
+    parsed = parse_git_remote_url(remote)
+    if parsed is None:
+        return remote, "", ""
+    return remote, parsed.url_key, parsed.display_name
+
+
+async def _link_row(
+    project: ProjectService,
+    store: SessionStore,
+    item: dict[str, Any],
+    *,
+    workspace: str,
+    fallback_name: str,
+) -> None:
+    workspace_id = str(
+        item.get("workspaceId") or item.get("workspace_id") or workspace
+    ).strip()
+    if workspace_id:
+        await store.set_workspace(workspace_id)
+    name = _row_display_name(item, fallback_name)
+    await project.link_registered_project(
+        _project_row_id(item),
+        project_slug=str(item.get("slug") or name),
+        display_name=name,
+        workspace_id=workspace_id,
+    )
+
+
 async def _ensure_registered_project(
     *,
     project: ProjectService,
@@ -61,15 +110,19 @@ async def _ensure_registered_project(
     gateway: GatewayClient,
     display_name: str = "",
 ) -> None:
-    """Create+link a registered project when the folder has none (or a stale id)."""
+    """Create or attach a project by Git origin, never by folder name."""
     token = load_credentials().token.strip()
     workspace = _workspace_id(store)
-    name = (
+    folder_name = (
         display_name.strip()
         or store.project_display_name.strip()
         or store.project_slug.strip()
         or (project_slug_from_path(store.project_path) if store.project_path else "")
     )
+    remote_url, url_key, origin_label = (
+        _folder_origin(store.project_path) if store.project_path else ("", "", "")
+    )
+    name = origin_label or folder_name
     if not token or not workspace or not name:
         raise RuntimeError("Sign in and choose a folder before syncing.")
 
@@ -79,62 +132,41 @@ async def _ensure_registered_project(
         existing = []
 
     linked_id = store.project_id.strip()
-    if linked_id and any(_project_row_id(item) == linked_id for item in existing):
-        return
-
-
-    if linked_id:
+    linked = next((item for item in existing if _project_row_id(item) == linked_id), None)
+    if linked_id and linked:
+        linked_key = _row_git_url_key(linked)
+        if not origin_needs_reattach(url_key, linked_key):
+            return
+        logger.info(
+            "origin changed on %s; re-resolving %s -> %s",
+            linked_id,
+            linked_key or "(local-only)",
+            url_key,
+        )
+    elif linked_id:
         logger.warning("linked project %s missing remotely; re-registering %s", linked_id, name)
 
-    match = next(
-        (
-            item
-            for item in existing
-            if str(item.get("displayName") or item.get("display_name") or "").strip()
-            == name
-            or str(item.get("slug") or "").strip() == name
-        ),
-        None,
-    )
-    if match:
-        await project.link_registered_project(
-            _project_row_id(match),
-            project_slug=str(match.get("slug") or name),
-            display_name=str(match.get("displayName") or match.get("display_name") or name),
-            workspace_id=str(match.get("workspaceId") or match.get("workspace_id") or workspace),
+    if url_key:
+        match = next(
+            (item for item in existing if _row_git_url_key(item) == url_key),
+            None,
         )
-        workspace_id = str(
-            match.get("workspaceId") or match.get("workspace_id") or ""
-        ).strip()
-        if workspace_id:
-            await store.set_workspace(workspace_id)
-        return
+        if match:
+            await _link_row(
+                project, store, match, workspace=workspace, fallback_name=name
+            )
+            return
 
-    payload = await gateway.create_project(token, workspace, name)
+    payload = await gateway.create_project(
+        token, workspace, name, remote_url=remote_url
+    )
     created = payload.get("project", payload) if isinstance(payload, dict) else {}
     if not isinstance(created, dict):
         created = {}
     project_id = _project_row_id(created)
     if not project_id:
         raise RuntimeError("Gateway created a project without an id.")
-    workspace_id = str(
-        created.get("workspaceId") or created.get("workspace_id") or workspace
-    ).strip()
-    if workspace_id:
-        await store.set_workspace(workspace_id)
-    await project.link_registered_project(
-        project_id,
-        project_slug=str(
-            created.get("slug")
-            or created.get("displayName")
-            or created.get("display_name")
-            or name
-        ),
-        display_name=str(
-            created.get("display_name") or created.get("displayName") or name
-        ),
-        workspace_id=workspace_id,
-    )
+    await _link_row(project, store, created, workspace=workspace, fallback_name=name)
 
 
 @router.post(LocalRoutes.PROJECT_PICK)

@@ -421,9 +421,12 @@ class SyncService:
         await self._store.mark_sync_start()
         creds = load_credentials()
         repo_root = Path(project_path).expanduser().resolve()
-        legacy_slug = self._store.project_slug.strip() or project_id.strip()
+
+
+
+        legacy_slug = project_id.strip() or self._store.project_slug.strip()
         if not legacy_slug:
-            raise RuntimeError("Linked project is missing its legacy sync selector.")
+            raise RuntimeError("Linked project is missing its sync selector.")
         gateway = self._gateway or GatewayClient(settings)
         owned = self._gateway is None
 
