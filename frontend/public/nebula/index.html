@@ -229,6 +229,15 @@
     #status.warn { color: var(--warn); }
     #status.err { color: var(--danger); }
     #status.sync-progress { min-width: 220px; color: var(--text); }
+    #status .status-row { display: flex; align-items: center; gap: 0.7rem; }
+    #status .status-text { min-width: 0; }
+    #status .status-sync {
+      flex-shrink: 0; cursor: pointer; font-weight: 650; font-size: 0.72rem;
+      padding: 0.28rem 0.6rem; border-radius: 8px; color: var(--text);
+      background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+    }
+    #status .status-sync:hover { border-color: var(--accent); }
+    #status .status-sync:disabled { opacity: 0.5; cursor: not-allowed; }
     .sync-label-row { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; }
     .sync-label { font-size: 0.72rem; color: var(--text); }
     .sync-pct { font-size: 0.68rem; font-family: ui-monospace, monospace; color: var(--muted); }

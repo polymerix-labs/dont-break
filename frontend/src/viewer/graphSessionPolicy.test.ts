@@ -125,6 +125,7 @@ test("a readable snapshot after a failed sync is announced as stale, never as cu
     const notice = graphViewNotice(GraphViewState.STALE);
     assert.equal(notice?.kind, "warn");
     assert.match(notice?.text ?? "", /last successful snapshot/);
+    assert.equal(notice?.action, "sync");
 });
 test("a graph that stopped mid-bootstrap is announced as incomplete", () => {
     const partial = session({
@@ -142,6 +143,7 @@ test("a graph that stopped mid-bootstrap is announced as incomplete", () => {
     assert.equal(notice?.kind, "err");
     assert.match(notice?.text ?? "", /702 of 727 nodes/);
     assert.match(notice?.text ?? "", /missing/);
+    assert.equal(notice?.action, "sync");
 });
 test("a count that outran its total is dropped, not shown", () => {
     const notice = graphViewNotice(GraphViewState.PARTIAL, {
@@ -182,6 +184,7 @@ test("no snapshot at all is not dressed up as one", () => {
     const nothing = session({ sync_phase: SyncPhase.FAILED, graph_error: "boom" });
     assert.equal(graphViewState(nothing), GraphViewState.UNAVAILABLE);
     assert.equal(graphViewNotice(GraphViewState.UNAVAILABLE)?.kind, "warn");
+    assert.equal(graphViewNotice(GraphViewState.UNAVAILABLE)?.action, "sync");
 });
 test("a sync in progress still needs its session id to stream", () => {
     assert.equal(shouldConnectGraphStream(session({ sync_phase: SyncPhase.UPLOADING, sync_session_id: "", graph_version: 11 })), false);

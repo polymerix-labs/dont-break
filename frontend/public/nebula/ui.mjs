@@ -20,6 +20,7 @@ import { hasArch, renderArchFromDto } from './ArchPanel.mjs';
 import { fetchNodeDetail } from './NodeDetailClient.mjs';
 import { bindSearchPick, isEmbed, notifyHost } from './hostBridge.mjs';
 import { splitNeighbors, impactSet, ruleCoverageForNode } from './panelData.mjs';
+import { LocalRoutes } from './wire/routes.mjs';
 export function escapeHtml(v) {
     return String(v == null ? '' : v)
         .replace(/&/g, '&amp;')
@@ -52,12 +53,49 @@ export function clearSyncProgress() {
     el.className = 'hud';
     el.textContent = '';
 }
-export function setStatus(msg, cls = '') {
+export const STATUS_SYNC_LABEL = 'Sync now';
+export function setStatus(msg, cls = '', opts = {}) {
     const el = document.getElementById('status');
     if (!el)
         return;
     el.className = ('hud ' + cls).trim();
+    if (opts?.action === 'sync') {
+        el.innerHTML = `
+      <div class="status-row">
+        <span class="status-text">${escapeHtml(msg)}</span>
+        <button type="button" class="status-sync" data-status-sync>${escapeHtml(STATUS_SYNC_LABEL)}</button>
+      </div>
+    `;
+        const button = el.querySelector('[data-status-sync]');
+        button?.addEventListener('click', () => {
+            void runStatusSync(button);
+        });
+        return;
+    }
     el.textContent = msg;
+}
+export function setStatusNotice(notice) {
+    if (!notice)
+        return;
+    setStatus(notice.text, notice.kind || '', { action: notice.action });
+}
+async function runStatusSync(button) {
+    if (!button || button.disabled)
+        return;
+    button.disabled = true;
+    const previous = button.textContent;
+    button.textContent = 'Syncing';
+    try {
+        const res = await fetch(LocalRoutes.PROJECT_SYNC, { method: 'POST' });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok)
+            throw new Error(body.error || 'Sync failed.');
+    }
+    catch (err) {
+        button.disabled = false;
+        button.textContent = previous;
+        setStatus(err instanceof Error ? err.message : 'Sync failed.', 'err', { action: 'sync' });
+    }
 }
 function kv(label, value) {
     if (value == null || value === '')

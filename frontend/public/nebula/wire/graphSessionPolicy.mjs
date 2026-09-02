@@ -96,15 +96,17 @@ export function graphViewNotice(state, counts = {}) {
             return {
                 text: `Incomplete graph${of} — part of your project is missing from this view. Retry the sync.`,
                 kind: "err",
+                action: "sync",
             };
         }
         case GraphViewState.STALE:
             return {
                 text: "Last sync failed — showing your project as of the last successful snapshot.",
                 kind: "warn",
+                action: "sync",
             };
         case GraphViewState.UNAVAILABLE:
-            return { text: NO_SNAPSHOT_YET, kind: "warn" };
+            return { text: NO_SNAPSHOT_YET, kind: "warn", action: "sync" };
         default:
             return null;
     }
@@ -133,7 +135,7 @@ function failureText(observed, raw) {
     return detail ? `${observed} ${FAILURE_REPORT_HINT}${detail}` : observed;
 }
 const GRAPH_STREAM_ERROR_TEXT = new Map([
-    [GraphStreamErrorCode.GRAPH_UNAVAILABLE, { text: NO_SNAPSHOT_YET, kind: "warn" }],
+    [GraphStreamErrorCode.GRAPH_UNAVAILABLE, { text: NO_SNAPSHOT_YET, kind: "warn", action: "sync" }],
     [GraphStreamErrorCode.PROXY_FAILED, { text: CONNECTION_LOST, kind: "warn" }],
     [GraphStreamErrorCode.SOCKET_ERROR, { text: CONNECTION_LOST, kind: "warn" }],
 ]);

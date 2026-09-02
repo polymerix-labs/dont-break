@@ -35,6 +35,7 @@ function check(name, cond) {
     check('an unbuilt graph never mentions docker', !/docker/i.test(notice.text));
     check('an unbuilt graph says what to do instead', /run a sync/i.test(notice.text));
     check('an unbuilt graph is not dressed up as an error', notice.kind === 'warn');
+    check('an unbuilt graph offers a sync from the same chip', notice.action === 'sync');
     check('the same situation reads the same wherever it is noticed', notice.text === NO_SNAPSHOT_YET);
     check('the wire message stays out of it', !notice.text.includes('graph unavailable for project pokedex'));
 }

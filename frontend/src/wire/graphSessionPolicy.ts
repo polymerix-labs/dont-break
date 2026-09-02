@@ -94,6 +94,7 @@ export function graphViewState(session: SessionSnapshot | null, viewer?: ViewerC
 export type GraphViewNotice = {
     text: string;
     kind: "warn" | "err";
+    action?: "sync";
 } | null;
 export function graphViewNotice(state: GraphViewState, counts: {
     nodesShown?: number;
@@ -108,15 +109,21 @@ export function graphViewNotice(state: GraphViewState, counts: {
             return {
                 text: `Incomplete graph${of} — part of your project is missing from this view. Retry the sync.`,
                 kind: "err",
+                action: "sync",
             };
         }
         case GraphViewState.STALE:
             return {
                 text: "Last sync failed — showing your project as of the last successful snapshot.",
                 kind: "warn",
+                action: "sync",
             };
         case GraphViewState.UNAVAILABLE:
-            return { text: "No snapshot to show yet — run a sync.", kind: "warn" };
+            return {
+                text: "No snapshot to show yet — run a sync.",
+                kind: "warn",
+                action: "sync",
+            };
         default:
             return null;
     }

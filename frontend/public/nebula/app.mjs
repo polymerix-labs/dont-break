@@ -19,7 +19,7 @@ import { buildModuleGraph, deriveViewModel, mapIdsToView, dominantModuleForIds, 
 import { GraphStreamClient } from './GraphStreamClient.mjs';
 import { edgeLegendEntries } from './colors.mjs';
 import { NebulaRenderer } from './NebulaRenderer.mjs';
-import { openNodePanel, closePanel, setupSearch, setStatus, setSyncProgress, clearSyncProgress } from './ui.mjs';
+import { openNodePanel, closePanel, setupSearch, setStatus, setStatusNotice, setSyncProgress, clearSyncProgress } from './ui.mjs';
 import { progressFromSnapshot } from './syncProgress.mjs';
 import { CONNECTION_GIVEN_UP, CONNECTION_LOST, GraphViewState, effectiveSyncSessionId, graphNotDrawnNotice, graphStreamErrorNotice, graphViewNotice, graphViewState, hasReadableSnapshot, isDeltaSyncInProgress, isSyncInProgress, lastSyncFailed, readyStatusFromMessage, readyStatusLabel, sessionUnreadableNotice, shouldConnectGraphStream, shouldFullRelayout, } from './graphSessionPolicy.mjs';
 import { initHostBridge, syncToolbar, bindGraphReload, bindSessionUpdate, bindOverlayHandlers, notifyNodeSelected, isEmbed, } from './hostBridge.mjs';
@@ -633,7 +633,7 @@ function reportGraphView(okText) {
     });
     const notice = graphViewNotice(state, { nodesShown, totalNodes: streamTotalNodes });
     if (notice) {
-        setStatus(notice.text, notice.kind);
+        setStatusNotice(notice);
     }
     else if (okText) {
         setStatus(okText);
@@ -952,7 +952,7 @@ function streamHandlers() {
             }
             console.error('stream error:', msg);
             const notice = graphStreamErrorNotice(msg);
-            setStatus(notice.text, notice.kind);
+            setStatusNotice(notice);
         },
     };
 }
@@ -1086,7 +1086,7 @@ async function loadFromStream() {
         return;
     }
     if (session?.graph_error && !hasReadableSnapshot(session)) {
-        setStatus(String(session.graph_error), 'err');
+        setStatus(String(session.graph_error), 'err', { action: 'sync' });
         console.groupEnd();
         return;
     }
@@ -1094,11 +1094,12 @@ async function loadFromStream() {
         updateSyncProgressUI(session);
     }
     else if (!shouldConnectGraphStream(session)) {
-        updateSyncProgressUI(session);
+        const notice = graphViewNotice(GraphViewState.UNAVAILABLE);
+        setStatusNotice(notice);
     }
     else if (lastSyncFailed(session)) {
         const notice = graphViewNotice(GraphViewState.STALE);
-        setStatus(notice.text, notice.kind);
+        setStatusNotice(notice);
     }
     else {
         setStatus('Connecting to your graph…');
