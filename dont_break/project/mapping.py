@@ -90,6 +90,10 @@ class FolderProjectStore:
             return None
         return mapped
 
+    def all(self) -> list[ProjectMapping]:
+        """Every persisted folder mapping."""
+        return self._load()
+
     def last(self) -> ProjectMapping | None:
         """Most recently saved mapping (last entry), or None if empty."""
         items = self._load()

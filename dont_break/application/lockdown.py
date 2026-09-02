@@ -25,9 +25,10 @@ import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Iterable, Optional, Sequence
 
 from dont_break.config import config_dir
+from dont_break.project.mapping import ProjectMapping
 
 DEFAULT_SCOPE = "session"
 DEFAULT_TTL_SEC = 30 * 60
@@ -108,15 +109,17 @@ class LockdownStore:
             current = self._parent[current]
         return current
 
-    def active(self, workspace_id: str, project_slug: str, conversation_id: str) -> Optional[Lockdown]:
-        key = _project_key(workspace_id, project_slug)
-        entry = self._by_project.get(key)
+    def active(
+        self,
+        workspace_id: str,
+        project_slug: str,
+        conversation_id: str,
+        *,
+        also: Sequence[str] = (),
+    ) -> Optional[Lockdown]:
+        """Live lock for this conversation, accepting legacy slug aliases."""
+        entry = self._find_live(workspace_id, project_slug, also, rekey_to=project_slug)
         if entry is None:
-            return None
-        now = self._clock()
-        if now >= entry.expires_at:
-            self._by_project.pop(key, None)
-            self._save()
             return None
         if entry.scope == "project":
             return entry
@@ -135,12 +138,13 @@ class LockdownStore:
         *,
         scope: str | None = None,
         ttl_sec: float | None = None,
+        also: Sequence[str] = (),
     ) -> Lockdown:
-        key = _project_key(workspace_id, project_slug)
+        """Create or extend a lock, rekeying a legacy slug entry onto the id."""
         now = self._clock()
         root = self.root_conversation(conversation_id) if conversation_id else ""
-        existing = self._by_project.get(key)
-        if existing is not None and now < existing.expires_at:
+        existing = self._find_live(workspace_id, project_slug, also, rekey_to=project_slug)
+        if existing is not None:
             if root:
                 existing.conversations[root] = True
             self._save()
@@ -155,29 +159,117 @@ class LockdownStore:
             opened_at=now,
             expires_at=expires,
         )
-        self._by_project[key] = entry
+        self._by_project[_project_key(workspace_id, project_slug)] = entry
         self._save()
         return entry
 
-    def release(self, workspace_id: str, project_slug: str) -> bool:
-        key = _project_key(workspace_id, project_slug)
-        if key not in self._by_project:
-            return False
-        self._by_project.pop(key)
-        self._save()
-        return True
-
-    def current(self, workspace_id: str, project_slug: str) -> Optional[Lockdown]:
-        """Live lock for the project, ignoring conversation. For the human banner."""
-        key = _project_key(workspace_id, project_slug)
-        entry = self._by_project.get(key)
-        if entry is None:
-            return None
-        now = self._clock()
-        if now >= entry.expires_at:
-            self._by_project.pop(key, None)
+    def release(
+        self,
+        workspace_id: str,
+        project_slug: str,
+        *,
+        also: Sequence[str] = (),
+    ) -> bool:
+        """Drop the primary key and any legacy alias keys for this project."""
+        removed = False
+        for key_part in (project_slug, *also):
+            text = (key_part or "").strip()
+            if not text:
+                continue
+            stored = _project_key(workspace_id, text)
+            if stored in self._by_project:
+                self._by_project.pop(stored)
+                removed = True
+        if removed:
             self._save()
-            return None
+        return removed
+
+    def current(
+        self,
+        workspace_id: str,
+        project_slug: str,
+        *,
+        also: Sequence[str] = (),
+    ) -> Optional[Lockdown]:
+        """Live lock for the project, ignoring conversation. For the human banner."""
+        return self._find_live(workspace_id, project_slug, also, rekey_to=project_slug)
+
+    def migrate_slug_keys(self, mappings: Iterable[ProjectMapping]) -> int:
+        """Rewrite persisted slug keys to registered ids. Returns entries moved."""
+        slug_to_id: dict[tuple[str, str], str] = {}
+        for mapping in mappings:
+            slug = (mapping.project_slug or "").strip()
+            project_id = (mapping.project_id or "").strip()
+            workspace = (mapping.workspace_id or "").strip()
+            if not slug or not project_id or slug == project_id:
+                continue
+            slug_to_id[(workspace, slug)] = project_id
+        moved = 0
+        for entry in list(self._by_project.values()):
+            new_id = slug_to_id.get((entry.workspace_id, entry.project_slug))
+            if new_id is None:
+                for (workspace, slug), project_id in slug_to_id.items():
+                    if slug == entry.project_slug and (
+                        not workspace or workspace == entry.workspace_id
+                    ):
+                        new_id = project_id
+                        break
+            if not new_id or new_id == entry.project_slug:
+                continue
+            self._rekey(entry, new_id)
+            moved += 1
+        if moved:
+            self._save()
+        return moved
+
+    def _find_live(
+        self,
+        workspace_id: str,
+        primary: str,
+        also: Sequence[str],
+        *,
+        rekey_to: str = "",
+    ) -> Optional[Lockdown]:
+        now = self._clock()
+        seen: set[str] = set()
+        for key_part in (primary, *also):
+            text = (key_part or "").strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            stored = _project_key(workspace_id, text)
+            entry = self._by_project.get(stored)
+            if entry is None:
+                continue
+            if now >= entry.expires_at:
+                self._by_project.pop(stored, None)
+                self._save()
+                continue
+            if rekey_to and rekey_to != entry.project_slug:
+                return self._rekey(entry, rekey_to)
+            return entry
+        return None
+
+    def _rekey(self, entry: Lockdown, new_project_key: str) -> Lockdown:
+        """Move a lock onto the registered id, merging conversations if needed."""
+        dest_part = (new_project_key or "").strip()
+        if not dest_part or dest_part == entry.project_slug:
+            return entry
+        old = entry.project_key
+        dest = _project_key(entry.workspace_id, dest_part)
+        existing = self._by_project.get(dest)
+        self._by_project.pop(old, None)
+        if (
+            existing is not None
+            and existing is not entry
+            and self._clock() < existing.expires_at
+        ):
+            existing.conversations.update(entry.conversations)
+            self._save()
+            return existing
+        entry.project_slug = dest_part
+        self._by_project[dest] = entry
+        self._save()
         return entry
 
     def remaining_sec(self, entry: Lockdown) -> Optional[float]:

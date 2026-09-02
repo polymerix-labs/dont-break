@@ -125,6 +125,7 @@ def wire_app_services(app) -> None:
         )
     if getattr(app.state, "lockdown", None) is None:
         app.state.lockdown = LockdownStore()
+    app.state.lockdown.migrate_slug_keys(app.state.folder_projects.all())
     if getattr(app.state, "write_mode", None) is None:
         app.state.write_mode = WriteModeStore()
     if getattr(app.state, "recent_checks", None) is None:

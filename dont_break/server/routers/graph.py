@@ -28,6 +28,7 @@ from dont_break.config import Settings
 from dont_break.credentials import load_credentials
 from dont_break.domain.wire import GraphStreamErrorCode, GraphStreamInboundType
 from dont_break.infrastructure.gateway_routes import GatewayHeaders, GatewayRoutes
+from dont_break.infrastructure.tenant import session_project_key
 from dont_break.server.routes_constants import LocalRoutes
 from dont_break.server.ws_codes import WS_CLOSE_REASON, WsCloseCode
 
@@ -82,6 +83,7 @@ async def _relay_graph_stream(
 
 @router.websocket(LocalRoutes.WS_GRAPH)
 async def graph_stream_proxy(websocket: WebSocket) -> None:
+    """Relay Nebula graph WS to the gateway using the registered project id."""
     store = get_session_store()
     settings = Settings()
     creds = load_credentials()
@@ -92,13 +94,14 @@ async def graph_stream_proxy(websocket: WebSocket) -> None:
         return
 
     org = resolve_workspace_id(store, creds)
-    project_slug = store.project_slug
-    if not org or not project_slug:
+    folders = getattr(websocket.app.state, "folder_projects", None)
+    project_key = session_project_key(store, folders)
+    if not org or not project_key:
         reason = WS_CLOSE_REASON[WsCloseCode.MISSING_CONTEXT].value
         await websocket.close(code=int(WsCloseCode.MISSING_CONTEXT), reason=reason)
         return
 
-    upstream_url = f"{_api_ws_base(settings)}{GatewayRoutes.graph_stream(org, project_slug)}"
+    upstream_url = f"{_api_ws_base(settings)}{GatewayRoutes.graph_stream(org, project_key)}"
     headers = {GatewayHeaders.AUTHORIZATION: GatewayHeaders.bearer(token)}
 
     await websocket.accept()

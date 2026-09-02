@@ -28,6 +28,7 @@ from fastapi import FastAPI
 from dont_break.application.workspace_resolve import resolve_workspace_id
 from dont_break.credentials import load_credentials
 from dont_break.infrastructure.gateway_routes import GatewayRoutes
+from dont_break.infrastructure.tenant import session_project_key
 from dont_break.server.deps import wire_app_services
 from dont_break.server.static_root import static_root
 
@@ -43,10 +44,11 @@ async def refresh_recent_checks(app: FastAPI) -> None:
         return
     token = (load_credentials().token or "").strip()
     workspace = resolve_workspace_id(store)
-    slug = store.project_slug.strip()
-    if not token or not workspace or not slug:
+    folders = getattr(app.state, "folder_projects", None)
+    project_key = session_project_key(store, folders)
+    if not token or not workspace or not project_key:
         return
-    path = GatewayRoutes.rules(workspace, slug, "/activity")
+    path = GatewayRoutes.rules(workspace, project_key, "/activity")
     response = await gateway.api_request(token, "GET", path)
     if response.status_code >= 400:
         return

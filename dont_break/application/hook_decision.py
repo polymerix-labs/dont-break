@@ -33,6 +33,7 @@ from dont_break.application.protected_paths_cache import (
 from dont_break.application.recent_checks import RecentCheckStore
 from dont_break.application.write_mode import WriteModeStore
 from dont_break.hooks.write_payload import observation_fields
+from dont_break.infrastructure.tenant import alias_tail, project_key_aliases, project_path_key
 from dont_break.project.mapping import (
     FolderProjectStore,
     ProjectMapping,
@@ -158,8 +159,12 @@ class HookDecisionService:
         mapping, relative, conversation_id, tool_name = located
         extra["relative_path"] = relative
         if self._locks is not None:
+            lock_key = project_path_key(mapping)
             locked = self._locks.active(
-                mapping.workspace_id, mapping.project_slug, conversation_id
+                mapping.workspace_id,
+                lock_key,
+                conversation_id,
+                also=alias_tail(lock_key, project_key_aliases(mapping)),
             )
             if locked is not None:
                 return HookDecision(
@@ -199,6 +204,7 @@ class HookDecisionService:
     def _locate(
         self, payload: Mapping[str, Any]
     ) -> Optional[tuple[ProjectMapping, str, str, str]]:
+        """Resolve the file to a mapped tenant. Requires a workspace and path key."""
         file_path = str(payload.get("file_path") or "").strip()
         workspace_root = str(payload.get("workspace_root") or "").strip()
         conversation_id = str(payload.get("conversation_id") or "").strip()
@@ -206,7 +212,7 @@ class HookDecisionService:
         if not file_path:
             return None
         mapping = self._mappings.for_file(file_path, workspace_root)
-        if mapping is None or not mapping.workspace_id or not mapping.project_slug:
+        if mapping is None or not mapping.workspace_id or not project_path_key(mapping):
             return None
         relative = relative_to_folder(file_path, mapping.folder)
         if relative is None:
@@ -239,7 +245,8 @@ class HookDecisionService:
             self._write_modes is not None
             and self._write_modes.is_hard(mapping.folder)
         )
-        entry = await self._cache.ensure(mapping.workspace_id, mapping.project_slug)
+
+        entry = await self._cache.ensure(mapping.workspace_id, project_path_key(mapping))
         if entry is None:
             if hard:
                 return deny_unverified(
@@ -316,8 +323,12 @@ class HookDecisionService:
         if self.enforce_blocks and matched.severity == "block":
             if self._locks is not None:
                 try:
+                    lock_key = project_path_key(mapping)
                     self._locks.open(
-                        mapping.workspace_id, mapping.project_slug, conversation_id
+                        mapping.workspace_id,
+                        lock_key,
+                        conversation_id,
+                        also=alias_tail(lock_key, project_key_aliases(mapping)),
                     )
                 except Exception:
                     pass

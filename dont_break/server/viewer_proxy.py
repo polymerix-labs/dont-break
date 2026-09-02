@@ -23,16 +23,19 @@ from dont_break.application.workspace_resolve import resolve_workspace_id
 from dont_break.credentials import load_credentials
 from dont_break.domain.errors import ApiErrorMessage, GatewayError
 from dont_break.infrastructure.gateway import GatewayClient
+from dont_break.infrastructure.tenant import session_project_key
 from dont_break.server.deps import gateway_from_app, session_store_from_app
 
 
 def _tenant_context(request: Request) -> tuple[str, str] | None:
+    """Workspace id and gateway project path key (registered id, never owner/repo)."""
     store = session_store_from_app(request)
     workspace = resolve_workspace_id(store)
-    project_slug = store.project_slug.strip()
-    if not workspace or not project_slug:
+    folders = getattr(request.app.state, "folder_projects", None)
+    project_key = session_project_key(store, folders)
+    if not workspace or not project_key:
         return None
-    return workspace, project_slug
+    return workspace, project_key
 
 
 async def proxy_viewer_get(
@@ -56,7 +59,7 @@ async def proxy_viewer_get(
             {"error": ApiErrorMessage.MISSING_WORKSPACE_PROJECT.value},
             status_code=400,
         )
-    workspace, project_slug = ctx
+    workspace, project_key = ctx
 
     params: dict[str, str] = dict(extra_query or {})
     for key, value in request.query_params.items():
@@ -66,7 +69,7 @@ async def proxy_viewer_get(
     gateway: GatewayClient = gateway_from_app(request)
     owned = getattr(request.app.state, "gateway", None) is None
     try:
-        res = await gateway.viewer_get(token, workspace, project_slug, suffix, query=params)
+        res = await gateway.viewer_get(token, workspace, project_key, suffix, query=params)
     except GatewayError as exc:
         return JSONResponse({"error": str(exc)}, status_code=502)
     finally:

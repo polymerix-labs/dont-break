@@ -131,11 +131,11 @@ def parse_freshness(payload: Mapping[str, Any]) -> Optional[FreshnessTokens]:
 
 class ProtectedPathsFetcher(Protocol):
     async def freshness(
-        self, token: str, workspace_id: str, project_slug: str
+        self, token: str, workspace_id: str, project_key: str
     ) -> Optional[FreshnessTokens]: ...
 
     async def protected_paths(
-        self, token: str, workspace_id: str, project_slug: str
+        self, token: str, workspace_id: str, project_key: str
     ) -> Optional[tuple[ProtectedRule, ...]]: ...
 
 
@@ -146,9 +146,10 @@ class GatewayProtectedPathsFetcher:
         self._gateway = gateway
 
     async def freshness(
-        self, token: str, workspace_id: str, project_slug: str
+        self, token: str, workspace_id: str, project_key: str
     ) -> Optional[FreshnessTokens]:
-        path = GatewayRoutes.rules(workspace_id, project_slug, "/freshness")
+        """Fetch rules freshness. ``project_key`` is a registered id, never owner/repo."""
+        path = GatewayRoutes.rules(workspace_id, project_key, "/freshness")
         res = await self._gateway().api_request(token, "GET", path)
         if res.status_code != 200:
             return None
@@ -159,9 +160,10 @@ class GatewayProtectedPathsFetcher:
         return parse_freshness(body) if isinstance(body, dict) else None
 
     async def protected_paths(
-        self, token: str, workspace_id: str, project_slug: str
+        self, token: str, workspace_id: str, project_key: str
     ) -> Optional[tuple[ProtectedRule, ...]]:
-        path = GatewayRoutes.query(workspace_id, project_slug, "/protected-paths")
+        """Fetch protected-path rules. ``project_key`` is a registered id, never owner/repo."""
+        path = GatewayRoutes.query(workspace_id, project_key, "/protected-paths")
         res = await self._gateway().api_request(token, "GET", path)
         if res.status_code != 200:
             return None

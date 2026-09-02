@@ -34,10 +34,11 @@ class GatewayRoutes:
         return f"/api/v1/me/tokens/{quote(token_id)}"
 
     @staticmethod
-    def sync_sessions(workspace_id: str, project_slug: str) -> str:
+    def sync_sessions(workspace_id: str, project_key: str) -> str:
+        """Tenant sync-sessions path. ``project_key`` is a registered id, not a display name."""
         ws = quote(workspace_id)
-        slug = quote(project_slug)
-        return f"/api/v1/workspaces/{ws}/projects/{slug}/sync/sessions"
+        key = quote(project_key)
+        return f"/api/v1/workspaces/{ws}/projects/{key}/sync/sessions"
 
     @staticmethod
     def project_sync_sessions(project_id: str) -> str:
@@ -86,34 +87,39 @@ class GatewayRoutes:
         return f"{GatewayRoutes.sync_session(session_id)}/events"
 
     @staticmethod
-    def viewer(workspace_id: str, project_slug: str, suffix: str) -> str:
+    def viewer(workspace_id: str, project_key: str, suffix: str) -> str:
+        """Tenant viewer path. ``project_key`` is a registered id, not a display name."""
         ws = quote(workspace_id)
-        slug = quote(project_slug)
-        return f"/api/v1/workspaces/{ws}/projects/{slug}/viewer{suffix}"
+        key = quote(project_key)
+        return f"/api/v1/workspaces/{ws}/projects/{key}/viewer{suffix}"
 
     @staticmethod
-    def graph_stream(workspace_id: str, project_slug: str) -> str:
+    def graph_stream(workspace_id: str, project_key: str) -> str:
+        """Tenant graph WebSocket path. ``project_key`` is a registered id, not a display name."""
         ws = quote(workspace_id)
-        slug = quote(project_slug)
-        return f"/api/v1/workspaces/{ws}/projects/{slug}/graph/stream"
+        key = quote(project_key)
+        return f"/api/v1/workspaces/{ws}/projects/{key}/graph/stream"
 
     @staticmethod
-    def query(workspace_id: str, project_slug: str, suffix: str) -> str:
+    def query(workspace_id: str, project_key: str, suffix: str) -> str:
+        """Tenant query path. ``project_key`` is a registered id, not a display name."""
         ws = quote(workspace_id)
-        slug = quote(project_slug)
-        return f"/api/v1/workspaces/{ws}/projects/{slug}/query{suffix}"
+        key = quote(project_key)
+        return f"/api/v1/workspaces/{ws}/projects/{key}/query{suffix}"
 
     @staticmethod
-    def rules(workspace_id: str, project_slug: str, suffix: str = "") -> str:
+    def rules(workspace_id: str, project_key: str, suffix: str = "") -> str:
+        """Tenant rules path. ``project_key`` is a registered id, not a display name."""
         ws = quote(workspace_id)
-        slug = quote(project_slug)
-        return f"/api/v1/workspaces/{ws}/projects/{slug}/rules{suffix}"
+        key = quote(project_key)
+        return f"/api/v1/workspaces/{ws}/projects/{key}/rules{suffix}"
 
     @staticmethod
-    def assist(workspace_id: str, project_slug: str, suffix: str = "") -> str:
+    def assist(workspace_id: str, project_key: str, suffix: str = "") -> str:
+        """Tenant assist path. ``project_key`` is a registered id, not a display name."""
         ws = quote(workspace_id)
-        slug = quote(project_slug)
-        return f"/api/v1/workspaces/{ws}/projects/{slug}/assist{suffix}"
+        key = quote(project_key)
+        return f"/api/v1/workspaces/{ws}/projects/{key}/assist{suffix}"
 
 
 class GatewayHeaders:

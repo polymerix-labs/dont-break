@@ -31,6 +31,7 @@ from dont_break.credentials import load_credentials
 from dont_break.domain.errors import ApiErrorMessage, GatewayError
 from dont_break.infrastructure.gateway import GatewayClient
 from dont_break.infrastructure.gateway_routes import GatewayRoutes
+from dont_break.infrastructure.tenant import session_project_key
 from dont_break.server.deps import gateway_from_app, session_store_from_app
 from dont_break.server.gateway_proxy import proxy_api_request
 from dont_break.server.routes_constants import AssistProxyRoutes
@@ -55,15 +56,16 @@ async def assist_rules(request: Request):
 
     store = session_store_from_app(request)
     workspace = resolve_workspace_id(store)
-    project_slug = store.project_slug.strip()
-    if not workspace or not project_slug:
+    folders = getattr(request.app.state, "folder_projects", None)
+    project_key = session_project_key(store, folders)
+    if not workspace or not project_key:
         return JSONResponse(
             {"error": ApiErrorMessage.MISSING_WORKSPACE_PROJECT.value},
             status_code=400,
         )
 
     body = await request.json()
-    path = GatewayRoutes.assist(workspace, project_slug, AssistProxyRoutes.RULES_SUFFIX)
+    path = GatewayRoutes.assist(workspace, project_key, AssistProxyRoutes.RULES_SUFFIX)
 
     gateway: GatewayClient = gateway_from_app(request)
     owned = getattr(request.app.state, "gateway", None) is None

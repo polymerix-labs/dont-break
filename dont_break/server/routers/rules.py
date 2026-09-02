@@ -19,6 +19,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 
 from dont_break.application.workspace_resolve import resolve_workspace_id
+from dont_break.infrastructure.tenant import session_project_aliases
 from dont_break.server.deps import session_store_from_app
 from dont_break.server.gateway_proxy import proxy_api_request
 from dont_break.server.routes_constants import RulesProxyRoutes
@@ -27,15 +28,17 @@ router = APIRouter()
 
 
 def _invalidate_hook_cache(request: Request) -> None:
-    """A rule written here is visible to the hook without waiting for the poll."""
+    """Drop cache buckets for the resolved id and any leftover slug key."""
     cache = getattr(request.app.state, "protected_paths_cache", None)
     if cache is None:
         return
     store = session_store_from_app(request)
     workspace = resolve_workspace_id(store)
-    slug = store.project_slug.strip()
-    if workspace and slug:
-        cache.invalidate(workspace, slug)
+    folders = getattr(request.app.state, "folder_projects", None)
+    if not workspace:
+        return
+    for project_key in session_project_aliases(store, folders):
+        cache.invalidate(workspace, project_key)
 
 
 @router.get(RulesProxyRoutes.LIST)

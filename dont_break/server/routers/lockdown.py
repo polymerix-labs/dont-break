@@ -23,19 +23,23 @@ from dont_break.application.lockdown import NEVER, LockdownStore
 from dont_break.application.workspace_resolve import resolve_workspace_id
 from dont_break.credentials import load_credentials
 from dont_break.infrastructure.gateway_routes import GatewayRoutes
+from dont_break.infrastructure.tenant import alias_tail, session_project_aliases, session_project_key
 from dont_break.server.deps import gateway_from_app, session_store_from_app
 from dont_break.server.routes_constants import LocalRoutes
 
 router = APIRouter()
 
 
-def _tenant(request: Request) -> tuple[str, str] | None:
+def _tenant(request: Request) -> tuple[str, str, tuple[str, ...]] | None:
+    """Workspace, primary path key, and legacy aliases for lockdown lookup."""
     store = session_store_from_app(request)
     workspace = resolve_workspace_id(store)
-    slug = store.project_slug.strip()
-    if not workspace or not slug:
+    folders = getattr(request.app.state, "folder_projects", None)
+    project_key = session_project_key(store, folders)
+    if not workspace or not project_key:
         return None
-    return workspace, slug
+    aliases = alias_tail(project_key, session_project_aliases(store, folders))
+    return workspace, project_key, aliases
 
 
 def _locks(request: Request) -> LockdownStore | None:
@@ -48,8 +52,15 @@ def _remaining_payload(remaining: float | None) -> int | None:
     return int(remaining)
 
 
-def _status_body(locks: LockdownStore, workspace_id: str, project_slug: str) -> dict:
-    entry = locks.current(workspace_id, project_slug)
+def _status_body(
+    locks: LockdownStore,
+    workspace_id: str,
+    project_slug: str,
+    *,
+    also: tuple[str, ...] = (),
+) -> dict:
+    """Human lockdown banner for the primary key, falling back to alias keys."""
+    entry = locks.current(workspace_id, project_slug, also=also)
     ttl = locks.default_ttl_sec
     return {
         "locked": entry is not None,
@@ -77,7 +88,7 @@ async def lockdown_status(request: Request) -> JSONResponse:
                 "policy": {"scope": "session", "ttl_sec": 1800},
             }
         )
-    return JSONResponse(_status_body(locks, tenant[0], tenant[1]))
+    return JSONResponse(_status_body(locks, tenant[0], tenant[1], also=tenant[2]))
 
 
 @router.post(LocalRoutes.LOCKDOWN_RELEASE)
@@ -86,8 +97,8 @@ async def lockdown_release(request: Request) -> JSONResponse:
     locks = _locks(request)
     if tenant is None or locks is None:
         return JSONResponse({"released": False})
-    workspace_id, project_slug = tenant
-    locks.release(workspace_id, project_slug)
+    workspace_id, project_slug, aliases = tenant
+    locks.release(workspace_id, project_slug, also=aliases)
     token = (load_credentials().token or "").strip()
     if token:
         try:
@@ -96,7 +107,9 @@ async def lockdown_release(request: Request) -> JSONResponse:
             await gateway.api_request(token, "POST", path, json_body={})
         except Exception:
             pass
-    return JSONResponse({"released": True, **_status_body(locks, workspace_id, project_slug)})
+    return JSONResponse(
+        {"released": True, **_status_body(locks, workspace_id, project_slug, also=aliases)}
+    )
 
 
 @router.put(LocalRoutes.LOCKDOWN_POLICY)
@@ -142,4 +155,4 @@ async def lockdown_policy(request: Request) -> JSONResponse:
                 }
             }
         )
-    return JSONResponse(_status_body(locks, tenant[0], tenant[1]))
+    return JSONResponse(_status_body(locks, tenant[0], tenant[1], also=tenant[2]))

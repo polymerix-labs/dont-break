@@ -22,6 +22,7 @@ from typing import Any, Callable, Optional, Protocol
 from dont_break.application.hook_decision import HookDecision
 from dont_break.infrastructure.gateway import GatewayClient
 from dont_break.infrastructure.gateway_routes import GatewayRoutes
+from dont_break.infrastructure.tenant import project_path_key
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +46,16 @@ class GatewayHookJournal:
         self._token_provider = token_provider
 
     async def emit(self, decision: HookDecision) -> None:
+        """POST a hook event on the tenant rules path keyed by registered id."""
         if decision.matched is None or decision.mapping is None:
             return
         token = str(self._token_provider() or "").strip()
         mapping = decision.mapping
-        if not token or not mapping.workspace_id or not mapping.project_slug:
+        project_key = project_path_key(mapping)
+        if not token or not mapping.workspace_id or not project_key:
             return
         kind = _kind_for(decision)
-        path = GatewayRoutes.rules(mapping.workspace_id, mapping.project_slug, "/hook-events")
+        path = GatewayRoutes.rules(mapping.workspace_id, project_key, "/hook-events")
         body: dict[str, Any] = {
             "kind": kind,
             "rule_id": decision.matched.rule_id,
