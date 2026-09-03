@@ -249,14 +249,19 @@ def is_transient_sync_failure(status_code: object, message: object = None) -> bo
 
     A 4xx is the project's own answer (limits, auth, a bad request) and must
     surface straight away; retrying it only delays the truth.
+
+    The HTTP status is taken from the argument when the caller attached it,
+    otherwise from the gateway wrapper or JSON envelope. Cloudflare's 502
+    page puts `status` in the body and the client used to drop it, which
+    made a blip look like a final answer.
     """
-    text = str(message or "").lower()
-    if any(marker in text for marker in _TRANSPORT_MARKERS):
+    text = str(message or "")
+    if any(marker in text.lower() for marker in _TRANSPORT_MARKERS):
         return True
     try:
         status = int(status_code)
     except (TypeError, ValueError):
-        return False
+        status = _status_code(_json_error_payload(text) or {}, text)
     return status in _UNREACHABLE_STATUS
 
 

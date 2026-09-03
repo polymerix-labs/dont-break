@@ -135,7 +135,7 @@ Keyboard-first: `cmd+K` opens the command palette.
 1. Open the dont-break app → **Agents**.
 2. Sign in, link the folder to a project, click **Connect Cursor**: one click mints a project-scoped token and fills `mcp.json`.
 3. Paste into Cursor (or your MCP client).
-4. Click **Install agent skill**: it writes the safe-change protocol into your repo's `AGENTS.md` so agents use the tools without being told.
+4. Click **Install skill**: it writes `.cursor/skills/dont-break/SKILL.md` (and `AGENTS.md` for other agents) so agents use the tools without being told.
 
 ## Languages and capabilities
 

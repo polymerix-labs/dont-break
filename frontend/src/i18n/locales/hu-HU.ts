@@ -675,6 +675,8 @@ const messages: Messages = {
     "agents.stepCreateToken.tech": "Mint the project-scoped dbt_ token",
     "agents.stepAddConfig": "Add a konfigot a(z) {name}hez",
     "agents.stepAddConfigCli": "Add ezeket a változókat a pipeline-odhoz",
+    "agents.stepWriteFiles": "Write Cursor files",
+    "agents.mcpWriteHint": "Connecting writes .cursor/mcp.json in this folder and installs the skill. You do not paste the config.",
     "agents.stepTryIt": "Próbáld ki az ügynököddel",
     "agents.otherMcp": "Más MCP-kliens",
     "agents.mcpHintFor": "Illeszd be ide: {path}. A {pkg} csomagot npx-szel futtatja.",

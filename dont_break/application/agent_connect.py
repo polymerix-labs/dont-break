@@ -21,6 +21,7 @@ action — never the session JWT.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,14 @@ SKILL_FILENAME = "AGENTS.md"
 SKILL_MARKER_START = "<!-- dont-break:skill:start -->"
 SKILL_MARKER_END = "<!-- dont-break:skill:end -->"
 
+CURSOR_SKILL_REL = Path(".cursor") / "skills" / "dont-break" / "SKILL.md"
+CURSOR_MCP_REL = Path(".cursor") / "mcp.json"
+CURSOR_SKILL_NAME = "dont-break"
+CURSOR_SKILL_DESCRIPTION = (
+    "Applies the dont-break safe-change protocol. Use before editing code, "
+    "when refactoring, or when reviewing impact with the dont-break MCP tools."
+)
+
 _SKILL_PATH = Path(__file__).resolve().parent.parent / "agents_skill.md"
 
 
@@ -75,6 +84,129 @@ class MintTokenError(RuntimeError):
 
 def skill_text() -> str:
     return _SKILL_PATH.read_text(encoding="utf-8")
+
+
+def cursor_skill_text() -> str:
+    """Cursor `SKILL.md` body: YAML frontmatter plus the shared protocol.
+
+    Omits `disable-model-invocation` so the agent can auto-apply the
+    protocol when editing, instead of waiting to be named.
+    """
+    return (
+        f"---\nname: {CURSOR_SKILL_NAME}\n"
+        f"description: {CURSOR_SKILL_DESCRIPTION}\n"
+        f"---\n\n{skill_text().strip()}\n"
+    )
+
+
+def _write_cursor_skill(root: Path) -> dict[str, str]:
+    """Create or refresh `.cursor/skills/dont-break/SKILL.md`."""
+    target = root / CURSOR_SKILL_REL
+    target.parent.mkdir(parents=True, exist_ok=True)
+    body = cursor_skill_text()
+    if target.exists() and target.read_text(encoding="utf-8") == body:
+        return {"path": str(target), "outcome": "unchanged"}
+    created = not target.exists()
+    target.write_text(body, encoding="utf-8")
+    return {"path": str(target), "outcome": "created" if created else "updated"}
+
+
+def _write_agents_md(root: Path) -> dict[str, str]:
+    """Create or refresh the marked dont-break section of `AGENTS.md`."""
+    target = root / SKILL_FILENAME
+    section = f"{SKILL_MARKER_START}\n{skill_text().strip()}\n{SKILL_MARKER_END}\n"
+
+    if not target.exists():
+        target.write_text(section, encoding="utf-8")
+        return {"path": str(target), "outcome": "created"}
+
+    existing = target.read_text(encoding="utf-8")
+    if SKILL_MARKER_START in existing and SKILL_MARKER_END in existing:
+        before = existing.split(SKILL_MARKER_START, 1)[0]
+        after = existing.split(SKILL_MARKER_END, 1)[1]
+        updated = before + section + after.lstrip("\n")
+        if updated == existing:
+            return {"path": str(target), "outcome": "unchanged"}
+        target.write_text(updated, encoding="utf-8")
+        return {"path": str(target), "outcome": "updated"}
+
+    target.write_text(existing.rstrip("\n") + "\n\n" + section, encoding="utf-8")
+    return {"path": str(target), "outcome": "appended"}
+
+
+def _combine_outcomes(*outcomes: str) -> str:
+    """Prefer `updated` over `created` so a mixed refresh still reports work."""
+    if "updated" in outcomes or "appended" in outcomes:
+        return "updated"
+    if "created" in outcomes:
+        return "created"
+    return "unchanged"
+
+
+def cursor_project_status(project_path: str) -> dict[str, Any]:
+    """Whether this folder already has the Cursor MCP server and skill files."""
+    root = Path(project_path) if project_path.strip() else None
+    mcp_path = str(root / CURSOR_MCP_REL) if root else ""
+    skill_path = str(root / CURSOR_SKILL_REL) if root else ""
+    mcp_installed = False
+    if root and root.is_dir():
+        target = root / CURSOR_MCP_REL
+        if target.is_file():
+            try:
+                data = json.loads(target.read_text(encoding="utf-8"))
+                servers = data.get("mcpServers") if isinstance(data, dict) else None
+                mcp_installed = isinstance(servers, dict) and MCP_SERVER_KEY in servers
+            except json.JSONDecodeError:
+                mcp_installed = False
+    return {
+        "mcp_installed": mcp_installed,
+        "mcp_path": mcp_path,
+        "skill_installed": bool(root and root.is_dir() and (root / CURSOR_SKILL_REL).is_file()),
+        "skill_path": skill_path,
+    }
+
+
+def write_cursor_mcp_json(project_path: str, mcp_config: dict[str, Any]) -> dict[str, str]:
+    """Merge the dont-break MCP server into `.cursor/mcp.json`, keeping other servers."""
+    root = Path(project_path)
+    if not project_path.strip() or not root.is_dir():
+        raise SkillInstallError("No project folder selected yet — pick a project first.")
+    incoming = mcp_config.get("mcpServers")
+    if not isinstance(incoming, dict) or MCP_SERVER_KEY not in incoming:
+        raise SkillInstallError("MCP payload is missing the dont-break server.")
+    target = root / CURSOR_MCP_REL
+    target.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict[str, Any] = {}
+    if target.exists():
+        try:
+            parsed = json.loads(target.read_text(encoding="utf-8"))
+            if isinstance(parsed, dict):
+                existing = parsed
+        except json.JSONDecodeError:
+            existing = {}
+    servers = existing.get("mcpServers")
+    if not isinstance(servers, dict):
+        servers = {}
+    created = MCP_SERVER_KEY not in servers
+    servers[MCP_SERVER_KEY] = incoming[MCP_SERVER_KEY]
+    existing["mcpServers"] = servers
+    body = json.dumps(existing, indent=2) + "\n"
+    if target.exists() and target.read_text(encoding="utf-8") == body:
+        return {"path": str(target), "outcome": "unchanged"}
+    target.write_text(body, encoding="utf-8")
+    return {"path": str(target), "outcome": "created" if created else "updated"}
+
+
+def apply_cursor_project_files(
+    project_path: str, mcp_config: dict[str, Any]
+) -> dict[str, Any]:
+    """Write `.cursor/mcp.json` and the skill when the local folder is known."""
+    if not project_path.strip() or not Path(project_path).is_dir():
+        return {}
+    return {
+        "mcp": write_cursor_mcp_json(project_path, mcp_config),
+        "skill": install_skill(project_path),
+    }
 
 
 def _env_block(api_url: str, dbt_secret: str = "") -> dict[str, str]:
@@ -153,6 +285,8 @@ async def build_agent_setup(
             gateway, session_token, project_id
         )
 
+    files = cursor_project_status(store.project_path)
+
     return {
         "authenticated": store.authenticated,
         "token_valid": token_valid,
@@ -174,6 +308,7 @@ async def build_agent_setup(
         "cli_snippet": snippets["cli_snippet"],
         "cli_package": CLI_PACKAGE,
         "mcp_package": MCP_PACKAGE,
+        **files,
     }
 
 
@@ -226,6 +361,18 @@ async def mint_agent_mcp_token(
         raise MintTokenError("Gateway returned an incomplete token response.")
 
     snippets = _mcp_payload(settings.api_base_url, secret)
+
+
+    project_files: dict[str, Any] = {}
+    try:
+        if target == "cursor":
+            project_files = apply_cursor_project_files(
+                store.project_path, snippets["mcp_config"]
+            )
+        elif store.project_path.strip() and Path(store.project_path).is_dir():
+            project_files = {"skill": install_skill(store.project_path)}
+    except SkillInstallError as exc:
+        project_files = {"error": str(exc)}
     return {
         "token_id": token_id,
         "secret": secret,
@@ -236,6 +383,7 @@ async def mint_agent_mcp_token(
         "cli_snippet": snippets["cli_snippet"],
         "cli_package": CLI_PACKAGE,
         "mcp_package": MCP_PACKAGE,
+        "project_files": project_files,
     }
 
 
@@ -288,31 +436,19 @@ async def regenerate_agent_mcp_token(
 
 
 def install_skill(project_path: str) -> dict[str, str]:
-    """Write (or refresh) the dont-break section of `AGENTS.md` in the project.
+    """Write the Cursor skill and the `AGENTS.md` protocol into the project.
 
-    Idempotent: the section lives between explicit markers; an existing
-    section is replaced in place, any surrounding user content is preserved.
+    Cursor loads `.cursor/skills/dont-break/SKILL.md`. Other agents still
+    read `AGENTS.md`. Both writes are idempotent.
     """
     root = Path(project_path)
     if not project_path.strip() or not root.is_dir():
         raise SkillInstallError("No project folder selected yet — pick a project first.")
 
-    target = root / SKILL_FILENAME
-    section = f"{SKILL_MARKER_START}\n{skill_text().strip()}\n{SKILL_MARKER_END}\n"
-
-    if not target.exists():
-        target.write_text(section, encoding="utf-8")
-        return {"path": str(target), "outcome": "created"}
-
-    existing = target.read_text(encoding="utf-8")
-    if SKILL_MARKER_START in existing and SKILL_MARKER_END in existing:
-        before = existing.split(SKILL_MARKER_START, 1)[0]
-        after = existing.split(SKILL_MARKER_END, 1)[1]
-        updated = before + section + after.lstrip("\n")
-        if updated == existing:
-            return {"path": str(target), "outcome": "unchanged"}
-        target.write_text(updated, encoding="utf-8")
-        return {"path": str(target), "outcome": "updated"}
-
-    target.write_text(existing.rstrip("\n") + "\n\n" + section, encoding="utf-8")
-    return {"path": str(target), "outcome": "appended"}
+    cursor = _write_cursor_skill(root)
+    agents = _write_agents_md(root)
+    return {
+        "path": cursor["path"],
+        "outcome": _combine_outcomes(cursor["outcome"], agents["outcome"]),
+        "agents_md": agents["path"],
+    }

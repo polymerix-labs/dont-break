@@ -127,6 +127,10 @@ export interface AgentSetup {
     hook_installed?: boolean;
     hook_manual?: string;
     hook_command?: string;
+    mcp_installed?: boolean;
+    mcp_path?: string;
+    skill_installed?: boolean;
+    skill_path?: string;
 }
 export type MintedAgentToken = {
     token_id: string;
@@ -138,6 +142,17 @@ export type MintedAgentToken = {
     cli_snippet: string;
     cli_package: string;
     mcp_package: string;
+    project_files?: {
+        mcp?: {
+            path: string;
+            outcome: string;
+        };
+        skill?: {
+            path: string;
+            outcome: string;
+        };
+        error?: string;
+    };
 };
 export async function fetchAgentSetup(): Promise<AgentSetup | null> {
     const res = await fetch(LocalRoutes.AGENTS_SETUP);
@@ -169,6 +184,7 @@ export async function mintAgentToken(target: string = "cursor"): Promise<MintedA
         cli_snippet: body.cli_snippet ?? "",
         cli_package: body.cli_package ?? "",
         mcp_package: body.mcp_package ?? "",
+        project_files: body.project_files,
     };
 }
 export async function regenerateAgentToken(previousTokenId: string, target: string = "cursor"): Promise<MintedAgentToken> {
@@ -195,6 +211,7 @@ export async function regenerateAgentToken(previousTokenId: string, target: stri
         cli_snippet: body.cli_snippet ?? "",
         cli_package: body.cli_package ?? "",
         mcp_package: body.mcp_package ?? "",
+        project_files: body.project_files,
     };
 }
 export async function installAgentSkill(): Promise<{

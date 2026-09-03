@@ -172,14 +172,13 @@ function UseCaseTeaser({ useCase, featured, onOpen, t, }: {
       </button>
     </Card>);
 }
-function UseCaseDialog({ useCase, setup, target, connected, open, onOpenChange, onInstallSkill, onGoSetup, t, }: {
+function UseCaseDialog({ useCase, setup, target, connected, open, onOpenChange, onGoSetup, t, }: {
     useCase: UseCase;
     setup: AgentSetup;
     target: AgentTarget;
     connected: boolean;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onInstallSkill: () => void;
     onGoSetup: () => void;
     t: TFunc;
 }) {
@@ -229,13 +228,6 @@ function UseCaseDialog({ useCase, setup, target, connected, open, onOpenChange, 
               {t("agents.setupCta")}
             </Button>
           </div>)}
-
-        {useCase.showsSkillInstall && connected ? (<div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-            <p className="max-w-lg text-xs text-muted">{t("agents.skillHint")}</p>
-            <Button variant="primary" size="sm" disabled={!setup.project_selected} onClick={onInstallSkill}>
-              {t("agents.installSkill")}
-            </Button>
-          </div>) : null}
       </div>
     </Dialog>);
 }
@@ -290,6 +282,7 @@ function maskTokenForDisplay(setup: AgentSetup): AgentSetup {
     };
 }
 function applyMintedToken(base: AgentSetup, minted: MintedAgentToken): AgentSetup {
+    const files = minted.project_files;
     return {
         ...base,
         has_mcp_secret: true,
@@ -298,6 +291,10 @@ function applyMintedToken(base: AgentSetup, minted: MintedAgentToken): AgentSetu
         cli_package: minted.cli_package || base.cli_package,
         mcp_package: minted.mcp_package || base.mcp_package,
         api_url: minted.api_url || base.api_url,
+        mcp_installed: Boolean(files?.mcp) || base.mcp_installed,
+        mcp_path: files?.mcp?.path || base.mcp_path,
+        skill_installed: Boolean(files?.skill) || base.skill_installed,
+        skill_path: files?.skill?.path || base.skill_path,
     };
 }
 export function AgentsPage() {
@@ -318,6 +315,7 @@ export function AgentsPage() {
     const ttbRef = useRef<HTMLDivElement | null>(null);
     const [hookInstalled, setHookInstalled] = useState(false);
     const [hookManual, setHookManual] = useState("");
+    const [skillInstalled, setSkillInstalled] = useState(false);
     useEffect(() => {
         let cancelled = false;
         void fetchAgentSetup()
@@ -332,6 +330,7 @@ export function AgentsPage() {
                 persistTokenId(data.project_id, data.existing_token_id);
             setHookInstalled(Boolean(data.hook_installed));
             setHookManual(data.hook_manual ?? "");
+            setSkillInstalled(Boolean(data.skill_installed));
         })
             .finally(() => {
             if (!cancelled)
@@ -371,7 +370,8 @@ export function AgentsPage() {
         void installAgentSkill()
             .then((result) => {
             const verb = result.outcome === "unchanged" ? t("agents.upToDate") : result.outcome;
-            toast({ title: `AGENTS.md ${verb}`, detail: result.path, tone: "ok" });
+            toast({ title: `${t("agents.skill")} ${verb}`, detail: result.path, tone: "ok" });
+            setSkillInstalled(true);
         })
             .catch((err: Error) => toast({ title: t("agents.skillInstallFailed"), detail: err.message, tone: "danger" }));
     }
@@ -395,6 +395,15 @@ export function AgentsPage() {
             setMintedTokenId(minted.token_id);
             persistTokenId(setup.project_id, minted.token_id);
             setHasSecret(true);
+            if (minted.project_files?.skill)
+                setSkillInstalled(true);
+            if (minted.project_files?.error) {
+                toast({
+                    title: t("agents.skillInstallFailed"),
+                    detail: minted.project_files.error,
+                    tone: "danger",
+                });
+            }
         }
         catch (err) {
             toast({
@@ -419,6 +428,15 @@ export function AgentsPage() {
             setMintedTokenId(minted.token_id);
             persistTokenId(setup.project_id, minted.token_id);
             setHasSecret(true);
+            if (minted.project_files?.skill)
+                setSkillInstalled(true);
+            if (minted.project_files?.error) {
+                toast({
+                    title: t("agents.skillInstallFailed"),
+                    detail: minted.project_files.error,
+                    tone: "danger",
+                });
+            }
         }
         catch (err) {
             toast({
@@ -497,6 +515,7 @@ export function AgentsPage() {
                 <StatusDot ok={Boolean(displaySetup.workspace_id)} label={t("agents.workspace")}/>
                 <StatusDot ok={Boolean(displaySetup.project_id) || displaySetup.project_selected} label={t("agents.project")}/>
                 <StatusDot ok={hookInstalled} label={t("agents.hook")}/>
+                <StatusDot ok={skillInstalled} label={t("agents.skill")}/>
               </div>
             </div>
             <div className="hidden shrink-0 lg:block">
@@ -519,7 +538,7 @@ export function AgentsPage() {
           {orderedUseCases(voice).map((useCase) => (<UseCaseDialog key={useCase.id} useCase={useCase} setup={displaySetup} target={agent} connected={agentChosen && connected} open={openUseCase === useCase.id} onOpenChange={(isOpen) => {
                 if (!isOpen)
                     setOpenUseCase(null);
-            }} onInstallSkill={installSkill} onGoSetup={() => ritualRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} t={t}/>))}
+            }} onGoSetup={() => ritualRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} t={t}/>))}
         </div>
 
         
@@ -576,7 +595,21 @@ export function AgentsPage() {
               {hasSecret ? <p className="text-xs text-warn">{t("agents.mintOnce")}</p> : null}
             </Step>) : null}
 
-          {agentChosen && connected ? (<Step n={3} done={false} title={isCiAgent
+          {agentChosen && connected && agent.id === "cursor" ? (<Step n={3} done={Boolean(displaySetup.mcp_installed)} title={t("agents.stepWriteFiles")}>
+              <p className="text-xs text-muted">{t("agents.mcpWriteHint")}</p>
+              {displaySetup.mcp_path ? (<p className="font-mono text-[11px] text-faint">{displaySetup.mcp_path}</p>) : null}
+              <details className="rounded border border-line">
+                <summary className="cursor-pointer list-none px-3 py-2 text-xs text-muted">
+                  {t("agents.configLabel")}
+                  <span className="ml-1.5 font-mono text-faint">.cursor/mcp.json</span>
+                </summary>
+                <div className="border-t border-line p-3">
+                  <CodeBlock code={mcpJson} copyKey="mcp-minted" t={t}/>
+                </div>
+              </details>
+            </Step>) : null}
+
+          {agentChosen && connected && agent.id !== "cursor" ? (<Step n={3} done={false} title={isCiAgent
                 ? t("agents.stepAddConfigCli")
                 : t("agents.stepAddConfig", { name: agentName })}>
               {isCiAgent ? (<>
@@ -599,8 +632,17 @@ export function AgentsPage() {
                 </>)}
             </Step>) : null}
 
+          {agentChosen && connected ? (<Step n={4} done={skillInstalled} title={t("agents.skill")}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <p className="max-w-lg text-xs text-muted">{t("agents.skillHint")}</p>
+                <Button variant="primary" size="sm" disabled={!displaySetup.project_selected} onClick={installSkill}>
+                  {skillInstalled ? t("agents.upToDate") : t("agents.installSkill")}
+                </Button>
+              </div>
+            </Step>) : null}
+
           {agentChosen && connected && readyToMint ? (<div ref={ttbRef} className="scroll-mt-6">
-              <Step n={4} done={false} title={t("agents.stepTryIt")} last>
+              <Step n={5} done={false} title={t("agents.stepTryIt")} last>
                 <TryToBreakIt setup={displaySetup} target={agent}/>
               </Step>
             </div>) : null}

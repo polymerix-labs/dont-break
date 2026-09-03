@@ -30,7 +30,7 @@ from dont_break.domain.errors import (
     ErrorCode,
     GatewayError,
 )
-from dont_break.domain.wire import SFS_TRANSPORT_VERSION, SyncPhase, SyncUploadMode
+from dont_break.domain.wire import SFS_TRANSPORT_VERSION, SyncUploadMode
 from dont_break.infrastructure.gateway_models import SyncJsonField
 from dont_break.infrastructure.gateway_routes import GatewayHeaders, GatewayRoutes
 
@@ -280,20 +280,9 @@ class GatewayClient:
             return self._expect_json(res)
 
     async def retry_sync_build(self, token: str, session_id: str) -> dict[str, Any]:
+        """Re-enqueue the seal. Status codes stay on the error so a 502 retries."""
         path = GatewayRoutes.sync_retry_build(session_id)
-        url = f"{self.base_url}{path}"
-        try:
-            res = await self._client.post(url, headers=self._headers(token), json={})
-        except httpx.ConnectError as exc:
-            raise self._unreachable(exc) from exc
-        if res.status_code not in (200, 202):
-            detail = res.text[:500] if res.text else res.reason_phrase
-            raise GatewayError(f"Gateway request failed ({res.status_code}): {detail}")
-        return (
-            res.json()
-            if res.content
-            else {SyncJsonField.STATUS.value: SyncPhase.SEALING.value}
-        )
+        return await self._post_json(token, path, {})
 
     async def get_sync_session(self, token: str, session_id: str) -> dict[str, Any]:
         path = GatewayRoutes.sync_session(session_id)

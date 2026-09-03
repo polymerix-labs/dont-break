@@ -675,6 +675,8 @@ const messages: Messages = {
     "agents.stepCreateToken.tech": "Mint the project-scoped dbt_ token",
     "agents.stepAddConfig": "Konfiguration zu {name} hinzufügen",
     "agents.stepAddConfigCli": "Diese Variablen zu deiner Pipeline hinzufügen",
+    "agents.stepWriteFiles": "Write Cursor files",
+    "agents.mcpWriteHint": "Connecting writes .cursor/mcp.json in this folder and installs the skill. You do not paste the config.",
     "agents.stepTryIt": "Mit deinem Agenten ausprobieren",
     "agents.otherMcp": "Anderer MCP-Client",
     "agents.mcpHintFor": "In {path} einfügen. Führt {pkg} über npx aus.",

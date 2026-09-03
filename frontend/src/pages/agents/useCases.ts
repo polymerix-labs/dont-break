@@ -25,14 +25,12 @@ export type UseCase = {
     configKind: "mcp" | "cli";
     buildPrompt: (setup: AgentSetup, target: AgentTarget) => string;
     buildTranscript: (setup: AgentSetup) => string;
-    showsSkillInstall?: boolean;
 };
 const protect: UseCase = {
     id: "protect",
     titleKey: "useCase.protect.title",
     painKey: "useCase.protect.pain",
     configKind: "mcp",
-    showsSkillInstall: true,
     buildPrompt: (setup) => [
         `Refactor the billing flow of ${setup.project_slug}.`,
         `Before touching any file, call check_change with the files you plan to edit.`,
