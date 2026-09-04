@@ -128,12 +128,15 @@ class GatewayClient:
         *,
         remote_url: str = "",
     ) -> dict[str, Any]:
+        from dont_break.git.identity import sanitize_remote_url
+
         body: dict[str, Any] = {
             "workspace_id": workspace_id,
             "display_name": display_name,
         }
-        if remote_url.strip():
-            body["remote_url"] = remote_url.strip()
+        origin = sanitize_remote_url(remote_url)
+        if origin:
+            body["remote_url"] = origin
         return await self._post_json(token, GatewayRoutes.PROJECTS, body)
 
     async def create_api_token(

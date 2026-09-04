@@ -30,7 +30,10 @@ from dont_break.application.workspace_resolve import resolve_workspace_id
 from dont_break.config import Settings
 from dont_break.credentials import StoredCredentials, is_valid_access_token
 from dont_break.domain.errors import GatewayError
+from dont_break.git.context import collect_git_context
+from dont_break.git.identity import parse_git_remote_url
 from dont_break.infrastructure.gateway import GatewayClient
+from dont_break.project.mapping import FolderProjectStore
 
 MCP_SERVER_KEY = "dont-break"
 MCP_PACKAGE = "@polymerix-labs/dont-break-mcp"
@@ -166,7 +169,49 @@ def cursor_project_status(project_path: str) -> dict[str, Any]:
     }
 
 
-def write_cursor_mcp_json(project_path: str, mcp_config: dict[str, Any]) -> dict[str, str]:
+def _mcp_dont_break_token(payload: dict[str, Any]) -> str:
+    """Extract the dont-break `DONT_BREAK_TOKEN` from an mcp.json-shaped dict."""
+    servers = payload.get("mcpServers")
+    if not isinstance(servers, dict):
+        return ""
+    server = servers.get(MCP_SERVER_KEY)
+    if not isinstance(server, dict):
+        return ""
+    env = server.get("env")
+    if not isinstance(env, dict):
+        return ""
+    return str(env.get("DONT_BREAK_TOKEN") or "").strip()
+
+
+def user_mcp_has_other_dont_break_token(minted_mcp: dict[str, Any]) -> bool:
+    """True when `~/.cursor/mcp.json` has a different dont-break token."""
+    user_path = Path.home() / ".cursor" / "mcp.json"
+    if not user_path.is_file():
+        return False
+    try:
+        raw = json.loads(user_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    existing = _mcp_dont_break_token(raw if isinstance(raw, dict) else {})
+    incoming = _mcp_dont_break_token(minted_mcp)
+    return bool(existing) and bool(incoming) and existing != incoming
+
+
+def _ensure_mcp_gitignored(cursor_dir: Path) -> None:
+    """Ignore `.cursor/mcp.json` so a minted `dbt_` is not committed."""
+    ignore = cursor_dir / ".gitignore"
+    try:
+        existing = ignore.read_text(encoding="utf-8") if ignore.is_file() else ""
+    except OSError:
+        existing = ""
+    names = {line.strip() for line in existing.splitlines()}
+    if "mcp.json" in names or "/mcp.json" in names:
+        return
+    prefix = f"{existing.rstrip()}\n" if existing.strip() else ""
+    ignore.write_text(f"{prefix}mcp.json\n", encoding="utf-8")
+
+
+def write_cursor_mcp_json(project_path: str, mcp_config: dict[str, Any]) -> dict[str, Any]:
     """Merge the dont-break MCP server into `.cursor/mcp.json`, keeping other servers."""
     root = Path(project_path)
     if not project_path.strip() or not root.is_dir():
@@ -176,6 +221,7 @@ def write_cursor_mcp_json(project_path: str, mcp_config: dict[str, Any]) -> dict
         raise SkillInstallError("MCP payload is missing the dont-break server.")
     target = root / CURSOR_MCP_REL
     target.parent.mkdir(parents=True, exist_ok=True)
+    _ensure_mcp_gitignored(target.parent)
     existing: dict[str, Any] = {}
     if target.exists():
         try:
@@ -191,10 +237,19 @@ def write_cursor_mcp_json(project_path: str, mcp_config: dict[str, Any]) -> dict
     servers[MCP_SERVER_KEY] = incoming[MCP_SERVER_KEY]
     existing["mcpServers"] = servers
     body = json.dumps(existing, indent=2) + "\n"
+    conflict = user_mcp_has_other_dont_break_token(mcp_config)
     if target.exists() and target.read_text(encoding="utf-8") == body:
-        return {"path": str(target), "outcome": "unchanged"}
+        return {
+            "path": str(target),
+            "outcome": "unchanged",
+            "user_mcp_conflict": conflict,
+        }
     target.write_text(body, encoding="utf-8")
-    return {"path": str(target), "outcome": "created" if created else "updated"}
+    return {
+        "path": str(target),
+        "outcome": "created" if created else "updated",
+        "user_mcp_conflict": conflict,
+    }
 
 
 def apply_cursor_project_files(
@@ -338,10 +393,41 @@ async def mint_agent_mcp_token(
         raise MintTokenError("Link this folder to a registered project first.")
 
     label = AGENT_MCP_LABELS.get(target, DEFAULT_AGENT_MCP_LABEL)
+    path = (store.project_path or "").strip()
+    if not path or not Path(path).is_dir():
+        raise MintTokenError("Pick a project folder first.")
+    mapping = FolderProjectStore().get(path)
+    if mapping is None or mapping.project_id != project_id:
+        raise MintTokenError("Link this folder to a registered project first.")
+    ctx = collect_git_context(Path(path))
+    parsed = parse_git_remote_url(ctx.remote_url) if ctx.remote_url else None
 
     owned = gateway is None
     client = gateway or GatewayClient(settings)
     try:
+        if parsed is not None:
+            try:
+                existing = await client.list_projects(session_token)
+            except GatewayError as exc:
+                raise MintTokenError(str(exc)) from exc
+            row = next(
+                (
+                    item
+                    for item in existing
+                    if str(item.get("id") or item.get("project_id") or "").strip()
+                    == project_id
+                ),
+                None,
+            )
+            if row is None:
+                raise MintTokenError("Link this folder to a registered project first.")
+            remote_key = str(
+                row.get("gitUrlKey") or row.get("git_url_key") or ""
+            ).strip().lower()
+            if remote_key and remote_key != parsed.url_key:
+                raise MintTokenError(
+                    "This folder's Git origin does not match the linked project."
+                )
         created = await client.create_api_token(
             session_token,
             workspace_id=workspace_id,
@@ -373,17 +459,20 @@ async def mint_agent_mcp_token(
             project_files = {"skill": install_skill(store.project_path)}
     except SkillInstallError as exc:
         project_files = {"error": str(exc)}
+    mcp_meta = project_files.get("mcp") if isinstance(project_files.get("mcp"), dict) else {}
     return {
         "token_id": token_id,
         "secret": secret,
         "api_url": settings.api_base_url.rstrip("/"),
         "workspace_id": workspace_id,
         "project_id": project_id,
+        "project_display_name": (store.project_display_name or "").strip(),
         "mcp_config": snippets["mcp_config"],
         "cli_snippet": snippets["cli_snippet"],
         "cli_package": CLI_PACKAGE,
         "mcp_package": MCP_PACKAGE,
         "project_files": project_files,
+        "user_mcp_conflict": bool(mcp_meta.get("user_mcp_conflict")),
     }
 
 

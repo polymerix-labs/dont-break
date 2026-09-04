@@ -32,7 +32,11 @@ from dont_break.credentials import load_credentials
 from dont_break.domain.errors import GatewayError, ProjectLimitError
 from dont_break.infrastructure.gateway import GatewayClient
 from dont_break.git.context import collect_git_context
-from dont_break.git.identity import origin_needs_reattach, parse_git_remote_url
+from dont_break.git.identity import (
+    origin_needs_reattach,
+    parse_git_remote_url,
+    sanitize_remote_url,
+)
 from dont_break.project.picker import PickerError
 from dont_break.project.slug import project_slug_from_path
 from dont_break.server.routes_constants import LocalRoutes
@@ -67,7 +71,7 @@ def _row_git_url_key(item: dict[str, Any]) -> str:
 
 
 def _folder_origin(project_path: str) -> tuple[str, str, str]:
-    """Return `(remote_url, url_key, owner/repo)` from `origin`, or empty strings."""
+    """Return sanitized `(remote_url, url_key, owner/repo)` from origin, or empty."""
     try:
         ctx = collect_git_context(Path(project_path))
     except RuntimeError:
@@ -76,9 +80,10 @@ def _folder_origin(project_path: str) -> tuple[str, str, str]:
     if not remote:
         return "", "", ""
     parsed = parse_git_remote_url(remote)
+    safe = sanitize_remote_url(remote)
     if parsed is None:
-        return remote, "", ""
-    return remote, parsed.url_key, parsed.display_name
+        return "", "", ""
+    return safe, parsed.url_key, parsed.display_name
 
 
 async def _link_row(

@@ -37,6 +37,26 @@ class GitUrlIdentity:
         return f"{self.owner}/{self.repo}"
 
 
+def sanitize_remote_url(raw: str) -> str:
+    """Origin safe to send to the gateway: no userinfo, or empty if unusable.
+
+    `https://user:token@host/owner/repo.git` becomes `https://host/owner/repo.git`.
+    scp-like `git@host:path` has no password and is returned unchanged when valid.
+    """
+    trimmed = raw.strip()
+    if not trimmed or parse_git_remote_url(trimmed) is None:
+        return ""
+    if _SCP.match(trimmed):
+        return trimmed
+    parsed = urlparse(trimmed)
+    host = (parsed.hostname or "").strip().lower().rstrip(".")
+    if not host:
+        return ""
+    port = f":{parsed.port}" if parsed.port else ""
+    path = parsed.path or ""
+    return f"{parsed.scheme.lower()}://{host}{port}{path}"
+
+
 def parse_git_remote_url(raw: str) -> GitUrlIdentity | None:
     """Parse https, ssh, or scp-like `git@host:path` origins. Rejects other schemes."""
     trimmed = raw.strip()

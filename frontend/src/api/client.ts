@@ -138,14 +138,17 @@ export type MintedAgentToken = {
     api_url: string;
     workspace_id: string;
     project_id: string;
+    project_display_name?: string;
     mcp_config: Record<string, unknown>;
     cli_snippet: string;
     cli_package: string;
     mcp_package: string;
+    user_mcp_conflict?: boolean;
     project_files?: {
         mcp?: {
             path: string;
             outcome: string;
+            user_mcp_conflict?: boolean;
         };
         skill?: {
             path: string;
@@ -154,6 +157,22 @@ export type MintedAgentToken = {
         error?: string;
     };
 };
+function mintedTokenFromBody(body: Partial<MintedAgentToken>): MintedAgentToken {
+    return {
+        token_id: body.token_id ?? "",
+        secret: body.secret ?? "",
+        api_url: body.api_url ?? "",
+        workspace_id: body.workspace_id ?? "",
+        project_id: body.project_id ?? "",
+        project_display_name: body.project_display_name ?? "",
+        mcp_config: body.mcp_config ?? {},
+        cli_snippet: body.cli_snippet ?? "",
+        cli_package: body.cli_package ?? "",
+        mcp_package: body.mcp_package ?? "",
+        user_mcp_conflict: body.user_mcp_conflict === true,
+        project_files: body.project_files,
+    };
+}
 export async function fetchAgentSetup(): Promise<AgentSetup | null> {
     const res = await fetch(LocalRoutes.AGENTS_SETUP);
     if (!res.ok)
@@ -174,18 +193,7 @@ export async function mintAgentToken(target: string = "cursor"): Promise<MintedA
     if (!body.token_id || !body.secret || !body.mcp_config) {
         throw new Error("Incomplete token response.");
     }
-    return {
-        token_id: body.token_id,
-        secret: body.secret,
-        api_url: body.api_url ?? "",
-        workspace_id: body.workspace_id ?? "",
-        project_id: body.project_id ?? "",
-        mcp_config: body.mcp_config,
-        cli_snippet: body.cli_snippet ?? "",
-        cli_package: body.cli_package ?? "",
-        mcp_package: body.mcp_package ?? "",
-        project_files: body.project_files,
-    };
+    return mintedTokenFromBody(body);
 }
 export async function regenerateAgentToken(previousTokenId: string, target: string = "cursor"): Promise<MintedAgentToken> {
     const res = await fetch(LocalRoutes.AGENTS_REGENERATE_TOKEN, {
@@ -201,18 +209,7 @@ export async function regenerateAgentToken(previousTokenId: string, target: stri
     if (!body.token_id || !body.secret || !body.mcp_config) {
         throw new Error("Incomplete token response.");
     }
-    return {
-        token_id: body.token_id,
-        secret: body.secret,
-        api_url: body.api_url ?? "",
-        workspace_id: body.workspace_id ?? "",
-        project_id: body.project_id ?? "",
-        mcp_config: body.mcp_config,
-        cli_snippet: body.cli_snippet ?? "",
-        cli_package: body.cli_package ?? "",
-        mcp_package: body.mcp_package ?? "",
-        project_files: body.project_files,
-    };
+    return mintedTokenFromBody(body);
 }
 export async function installAgentSkill(): Promise<{
     path: string;

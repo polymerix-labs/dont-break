@@ -101,7 +101,7 @@ def _is_newer(latest: str, installed: str) -> bool:
 def _floor_tuple() -> tuple[int, int, int]:
     """Minimum facts-extract semver accepted by this CLI, from the npm pin."""
     raw = FACTS_EXTRACT_VERSION.lstrip("^~>=< ")
-    return _parse_semver(raw) or (0, 17, 1)
+    return _parse_semver(raw) or (0, 17, 3)
 
 
 def _meets_floor(version: str) -> bool:
