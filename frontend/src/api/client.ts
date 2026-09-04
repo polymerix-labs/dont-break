@@ -144,11 +144,13 @@ export type MintedAgentToken = {
     cli_package: string;
     mcp_package: string;
     user_mcp_conflict?: boolean;
+    user_mcp_cleared?: boolean;
     project_files?: {
         mcp?: {
             path: string;
             outcome: string;
             user_mcp_conflict?: boolean;
+            user_mcp_cleared?: boolean;
         };
         skill?: {
             path: string;
@@ -170,6 +172,7 @@ function mintedTokenFromBody(body: Partial<MintedAgentToken>): MintedAgentToken 
         cli_package: body.cli_package ?? "",
         mcp_package: body.mcp_package ?? "",
         user_mcp_conflict: body.user_mcp_conflict === true,
+        user_mcp_cleared: body.user_mcp_cleared === true,
         project_files: body.project_files,
     };
 }

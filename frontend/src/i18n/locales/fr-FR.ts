@@ -676,7 +676,7 @@ const messages: Messages = {
     "agents.stepAddConfig": "Ajoute la config dans {name}",
     "agents.stepAddConfigCli": "Ajoute ces variables à ta pipeline",
     "agents.stepWriteFiles": "Écrire les fichiers Cursor",
-    "agents.mcpWriteHint": "La connexion écrit .cursor/mcp.json dans ce dossier. Pas besoin de coller la config.",
+    "agents.mcpWriteHint": "La connexion écrit .cursor/mcp.json dans ce dossier (MCP projet, pas User). Un dont-break au niveau utilisateur du même nom est retiré pour que Cursor active celui du projet.",
     "agents.stepTryIt": "Essaie avec ton agent",
     "agents.otherMcp": "Autre client MCP",
     "agents.mcpHintFor": "Colle dans {path}. Exécute {pkg} via npx.",

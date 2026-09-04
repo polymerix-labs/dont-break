@@ -42,6 +42,11 @@ def _has_our_command(entries: Any) -> bool:
 
 
 def cursor_dir(home: Path | None = None) -> Path:
+    """User-level Cursor config directory (`~/.cursor`).
+
+    Tests redirect this via ``DONT_BREAK_CURSOR_HOME`` so hook and MCP writes
+    never touch the real machine.
+    """
     if home is not None:
         return home / ".cursor"
     override = os.environ.get("DONT_BREAK_CURSOR_HOME")

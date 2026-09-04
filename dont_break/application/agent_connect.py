@@ -32,6 +32,7 @@ from dont_break.credentials import StoredCredentials, is_valid_access_token
 from dont_break.domain.errors import GatewayError
 from dont_break.git.context import collect_git_context
 from dont_break.git.identity import parse_git_remote_url
+from dont_break.hooks.install import cursor_dir
 from dont_break.infrastructure.gateway import GatewayClient
 from dont_break.project.mapping import FolderProjectStore
 
@@ -183,9 +184,14 @@ def _mcp_dont_break_token(payload: dict[str, Any]) -> str:
     return str(env.get("DONT_BREAK_TOKEN") or "").strip()
 
 
+def _user_mcp_path() -> Path:
+    """User-level Cursor MCP file. Tests redirect via ``DONT_BREAK_CURSOR_HOME``."""
+    return cursor_dir() / "mcp.json"
+
+
 def user_mcp_has_other_dont_break_token(minted_mcp: dict[str, Any]) -> bool:
     """True when `~/.cursor/mcp.json` has a different dont-break token."""
-    user_path = Path.home() / ".cursor" / "mcp.json"
+    user_path = _user_mcp_path()
     if not user_path.is_file():
         return False
     try:
@@ -195,6 +201,38 @@ def user_mcp_has_other_dont_break_token(minted_mcp: dict[str, Any]) -> bool:
     existing = _mcp_dont_break_token(raw if isinstance(raw, dict) else {})
     incoming = _mcp_dont_break_token(minted_mcp)
     return bool(existing) and bool(incoming) and existing != incoming
+
+
+def clear_user_dont_break_mcp() -> bool:
+    """Remove `dont-break` from `~/.cursor/mcp.json`.
+
+    Cursor disables a project MCP server when a user-level server uses the
+    same name, so a leftover User entry keeps the folder's token from
+    loading. Other user MCP servers are left intact. Returns True when an
+    entry was removed.
+    """
+    user_path = _user_mcp_path()
+    if not user_path.is_file():
+        return False
+    try:
+        raw = json.loads(user_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(raw, dict):
+        return False
+    servers = raw.get("mcpServers")
+    if not isinstance(servers, dict) or MCP_SERVER_KEY not in servers:
+        return False
+    del servers[MCP_SERVER_KEY]
+    if servers:
+        raw["mcpServers"] = servers
+        user_path.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+        return True
+    try:
+        user_path.unlink()
+    except OSError:
+        user_path.write_text("{}\n", encoding="utf-8")
+    return True
 
 
 def _ensure_mcp_gitignored(cursor_dir: Path) -> None:
@@ -212,7 +250,12 @@ def _ensure_mcp_gitignored(cursor_dir: Path) -> None:
 
 
 def write_cursor_mcp_json(project_path: str, mcp_config: dict[str, Any]) -> dict[str, Any]:
-    """Merge the dont-break MCP server into `.cursor/mcp.json`, keeping other servers."""
+    """Merge dont-break into the project's `.cursor/mcp.json` and drop the User copy.
+
+    Cursor lists both scopes in Settings. A user-level `dont-break` with the
+    same name disables the project server, so minting always writes the
+    folder file then removes `dont-break` from `~/.cursor/mcp.json`.
+    """
     root = Path(project_path)
     if not project_path.strip() or not root.is_dir():
         raise SkillInstallError("No project folder selected yet — pick a project first.")
@@ -237,17 +280,17 @@ def write_cursor_mcp_json(project_path: str, mcp_config: dict[str, Any]) -> dict
     servers[MCP_SERVER_KEY] = incoming[MCP_SERVER_KEY]
     existing["mcpServers"] = servers
     body = json.dumps(existing, indent=2) + "\n"
+    if not (target.exists() and target.read_text(encoding="utf-8") == body):
+        target.write_text(body, encoding="utf-8")
+        outcome = "created" if created else "updated"
+    else:
+        outcome = "unchanged"
+    cleared = clear_user_dont_break_mcp()
     conflict = user_mcp_has_other_dont_break_token(mcp_config)
-    if target.exists() and target.read_text(encoding="utf-8") == body:
-        return {
-            "path": str(target),
-            "outcome": "unchanged",
-            "user_mcp_conflict": conflict,
-        }
-    target.write_text(body, encoding="utf-8")
     return {
         "path": str(target),
-        "outcome": "created" if created else "updated",
+        "outcome": outcome,
+        "user_mcp_cleared": cleared,
         "user_mcp_conflict": conflict,
     }
 
@@ -473,6 +516,7 @@ async def mint_agent_mcp_token(
         "mcp_package": MCP_PACKAGE,
         "project_files": project_files,
         "user_mcp_conflict": bool(mcp_meta.get("user_mcp_conflict")),
+        "user_mcp_cleared": bool(mcp_meta.get("user_mcp_cleared")),
     }
 
 

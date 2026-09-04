@@ -620,7 +620,7 @@ export const en = {
     "agents.stepAddConfig": "Add the config to {name}",
     "agents.stepAddConfigCli": "Add these variables to your pipeline",
     "agents.stepWriteFiles": "Write Cursor files",
-    "agents.mcpWriteHint": "Connecting writes .cursor/mcp.json in this folder. You do not paste the config.",
+    "agents.mcpWriteHint": "Connecting writes .cursor/mcp.json in this folder (project MCP, not User). A user-level dont-break with the same name is removed so Cursor can enable this project's server.",
     "agents.stepTryIt": "Try it with your agent",
     "agents.otherMcp": "Other MCP client",
     "agents.mcpHintFor": "Paste into {path}. Runs {pkg} via npx.",
